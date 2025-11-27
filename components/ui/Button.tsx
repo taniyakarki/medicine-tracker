@@ -1,13 +1,25 @@
-import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, ViewStyle, TextStyle } from 'react-native';
-import { Colors, Typography, BorderRadius, Spacing, Layout } from '../../constants/design';
-import { useColorScheme } from 'react-native';
+import React from "react";
+import {
+  ActivityIndicator,
+  Text,
+  TextStyle,
+  TouchableOpacity,
+  useColorScheme,
+  ViewStyle,
+} from "react-native";
+import {
+  BorderRadius,
+  Colors,
+  Layout,
+  Spacing,
+  Typography,
+} from "../../constants/design";
 
 interface ButtonProps {
   title: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
-  size?: 'sm' | 'md' | 'lg';
+  variant?: "primary" | "secondary" | "ghost" | "danger";
+  size?: "sm" | "md" | "lg";
   disabled?: boolean;
   loading?: boolean;
   fullWidth?: boolean;
@@ -18,8 +30,8 @@ interface ButtonProps {
 export const Button: React.FC<ButtonProps> = ({
   title,
   onPress,
-  variant = 'primary',
-  size = 'md',
+  variant = "primary",
+  size = "md",
   disabled = false,
   loading = false,
   fullWidth = false,
@@ -27,24 +39,24 @@ export const Button: React.FC<ButtonProps> = ({
   textStyle,
 }) => {
   const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const isDark = colorScheme === "dark";
   const colors = isDark ? Colors.dark : Colors.light;
 
   const getButtonStyle = (): ViewStyle => {
     const baseStyle: ViewStyle = {
       borderRadius: BorderRadius.md,
-      alignItems: 'center',
-      justifyContent: 'center',
-      flexDirection: 'row',
+      alignItems: "center",
+      justifyContent: "center",
+      flexDirection: "row",
     };
 
     // Size
     switch (size) {
-      case 'sm':
+      case "sm":
         baseStyle.height = 36;
         baseStyle.paddingHorizontal = Spacing.md;
         break;
-      case 'lg':
+      case "lg":
         baseStyle.height = 56;
         baseStyle.paddingHorizontal = Spacing.xl;
         break;
@@ -55,15 +67,15 @@ export const Button: React.FC<ButtonProps> = ({
 
     // Variant
     switch (variant) {
-      case 'secondary':
+      case "secondary":
         baseStyle.backgroundColor = colors.secondary;
         break;
-      case 'ghost':
-        baseStyle.backgroundColor = 'transparent';
+      case "ghost":
+        baseStyle.backgroundColor = "transparent";
         baseStyle.borderWidth = 1;
         baseStyle.borderColor = colors.border;
         break;
-      case 'danger':
+      case "danger":
         baseStyle.backgroundColor = colors.danger;
         break;
       default:
@@ -75,7 +87,7 @@ export const Button: React.FC<ButtonProps> = ({
     }
 
     if (fullWidth) {
-      baseStyle.width = '100%';
+      baseStyle.width = "100%";
     }
 
     return baseStyle;
@@ -87,20 +99,20 @@ export const Button: React.FC<ButtonProps> = ({
     };
 
     switch (size) {
-      case 'sm':
+      case "sm":
         baseStyle.fontSize = Typography.fontSize.sm;
         break;
-      case 'lg':
+      case "lg":
         baseStyle.fontSize = Typography.fontSize.lg;
         break;
       default:
         baseStyle.fontSize = Typography.fontSize.base;
     }
 
-    if (variant === 'ghost') {
+    if (variant === "ghost") {
       baseStyle.color = colors.primary;
     } else {
-      baseStyle.color = '#FFFFFF';
+      baseStyle.color = "#FFFFFF";
     }
 
     return baseStyle;
@@ -114,11 +126,12 @@ export const Button: React.FC<ButtonProps> = ({
       activeOpacity={0.7}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'ghost' ? colors.primary : '#FFFFFF'} />
+        <ActivityIndicator
+          color={variant === "ghost" ? colors.primary : "#FFFFFF"}
+        />
       ) : (
         <Text style={[getTextStyle(), textStyle]}>{title}</Text>
       )}
     </TouchableOpacity>
   );
 };
-

@@ -6,10 +6,9 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-} from 'react-native';
+ useColorScheme } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors, Spacing } from '../../../constants/design';
-import { useColorScheme } from 'react-native';
 import { Input } from '../../../components/ui/Input';
 import { Select, SelectOption } from '../../../components/ui/Select';
 import { Button } from '../../../components/ui/Button';

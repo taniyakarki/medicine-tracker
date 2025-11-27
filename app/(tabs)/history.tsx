@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, RefreshControl } from 'react-native';
-import { Colors, Typography, Spacing, BorderRadius } from '../../constants/design';
-import { useColorScheme } from 'react-native';
-import { Card } from '../../components/ui/Card';
-import { useMedicineStats, useTodayDoses } from '../../lib/hooks/useDoses';
-import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { Ionicons } from '@expo/vector-icons';
+import React, { useState } from 'react';
+import { RefreshControl, ScrollView, StyleSheet, Text, useColorScheme, View } from 'react-native';
+import { Card } from '../../components/ui/Card';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
+import { BorderRadius, Colors, Spacing, Typography } from '../../constants/design';
+import { useMedicineStats, useTodayDoses } from '../../lib/hooks/useDoses';
 import { formatDate } from '../../lib/utils/date-helpers';
 
 export default function HistoryScreen() {
@@ -78,7 +77,7 @@ export default function HistoryScreen() {
         {/* Today's Doses */}
         <Card style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            Today's Doses ({formatDate(new Date().toISOString())})
+            Today&apos;s Doses ({formatDate(new Date().toISOString())})
           </Text>
           {doses.length === 0 ? (
             <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
@@ -157,7 +156,7 @@ export default function HistoryScreen() {
             <View style={styles.insightItem}>
               <Ionicons name="flame" size={20} color={colors.warning} />
               <Text style={[styles.insightText, { color: colors.textSecondary }]}>
-                You're on a {stats.currentStreak} day streak!
+                You&apos;re on a {stats.currentStreak} day streak!
               </Text>
             </View>
           )}

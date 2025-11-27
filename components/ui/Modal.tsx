@@ -8,9 +8,8 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-} from 'react-native';
+ useColorScheme } from 'react-native';
 import { Colors, Typography, BorderRadius, Spacing, Shadows } from '../../constants/design';
-import { useColorScheme } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 interface ModalProps {

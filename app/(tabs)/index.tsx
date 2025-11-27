@@ -1,27 +1,22 @@
+import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, RefreshControl, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Colors, Typography, Spacing, BorderRadius } from '../../constants/design';
-import { useColorScheme } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, Text, useColorScheme, View } from 'react-native';
 import { Card } from '../../components/ui/Card';
-import { ProgressRing } from '../../components/ui/ProgressRing';
-import { Timeline, TimelineItem } from '../../components/ui/Timeline';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
-import { useMedicineStats, useUpcomingDoses, useRecentActivity, useDoseActions } from '../../lib/hooks/useDoses';
-import { formatTime, formatDateTime, getTimeUntil, isOverdue, isUpcomingSoon } from '../../lib/utils/date-helpers';
-import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import { ProgressRing } from '../../components/ui/ProgressRing';
+import { Timeline, TimelineItem } from '../../components/ui/Timeline';
+import { Colors, Spacing, Typography } from '../../constants/design';
+import { useMedicineStats, useRecentActivity, useUpcomingDoses } from '../../lib/hooks/useDoses';
+import { formatDateTime, formatTime, getTimeUntil, isOverdue } from '../../lib/utils/date-helpers';
 
 export default function HomeScreen() {
-  const router = useRouter();
   const colorScheme = useColorScheme();
   const colors = colorScheme === 'dark' ? Colors.dark : Colors.light;
 
   const { stats, loading: statsLoading, refresh: refreshStats } = useMedicineStats();
-  const { doses: upcomingDoses, loading: dosesLoading, refresh: refreshDoses } = useUpcomingDoses(24);
-  const { activity, loading: activityLoading, refresh: refreshActivity } = useRecentActivity(5);
-  const { markAsTaken } = useDoseActions();
+  const { doses: upcomingDoses, refresh: refreshDoses } = useUpcomingDoses(24);
+  const { activity, refresh: refreshActivity } = useRecentActivity(5);
 
   const [refreshing, setRefreshing] = useState(false);
 
@@ -29,16 +24,6 @@ export default function HomeScreen() {
     setRefreshing(true);
     await Promise.all([refreshStats(), refreshDoses(), refreshActivity()]);
     setRefreshing(false);
-  };
-
-  const handleMarkAsTaken = async (doseId: string) => {
-    try {
-      await markAsTaken(doseId);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      await handleRefresh();
-    } catch (error) {
-      console.error('Error marking dose as taken:', error);
-    }
   };
 
   const todayProgress = stats.todayTotal > 0 ? (stats.todayTaken / stats.todayTotal) * 100 : 0;
@@ -74,7 +59,7 @@ export default function HomeScreen() {
       >
         {/* Progress Section */}
         <Card style={styles.progressCard}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Today's Progress</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Today&apos;s Progress</Text>
           <View style={styles.progressContent}>
             <ProgressRing progress={todayProgress} size={120} />
             <View style={styles.progressStats}>

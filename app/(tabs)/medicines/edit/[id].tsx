@@ -1,53 +1,56 @@
-import React, { useState, useEffect } from 'react';
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
-  View,
-  ScrollView,
-  StyleSheet,
   Alert,
   KeyboardAvoidingView,
   Platform,
-} from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Colors, Spacing } from '../../../../constants/design';
-import { useColorScheme } from 'react-native';
-import { Input } from '../../../../components/ui/Input';
-import { Select, SelectOption } from '../../../../components/ui/Select';
-import { Button } from '../../../../components/ui/Button';
-import { Card } from '../../../../components/ui/Card';
-import { LoadingSpinner } from '../../../../components/ui/LoadingSpinner';
-import { validateMedicineForm } from '../../../../lib/utils/validation';
-import { getMedicineById, updateMedicine } from '../../../../lib/database/models/medicine';
+  ScrollView,
+  StyleSheet,
+  useColorScheme,
+  View,
+} from "react-native";
+import { Button } from "../../../../components/ui/Button";
+import { Card } from "../../../../components/ui/Card";
+import { Input } from "../../../../components/ui/Input";
+import { LoadingSpinner } from "../../../../components/ui/LoadingSpinner";
+import { Select, SelectOption } from "../../../../components/ui/Select";
+import { Colors, Spacing } from "../../../../constants/design";
+import {
+  getMedicineById,
+  updateMedicine,
+} from "../../../../lib/database/models/medicine";
+import { validateMedicineForm } from "../../../../lib/utils/validation";
 
 const medicineTypes: SelectOption[] = [
-  { label: 'Pill', value: 'pill' },
-  { label: 'Liquid', value: 'liquid' },
-  { label: 'Injection', value: 'injection' },
-  { label: 'Inhaler', value: 'inhaler' },
-  { label: 'Drops', value: 'drops' },
-  { label: 'Other', value: 'other' },
+  { label: "Pill", value: "pill" },
+  { label: "Liquid", value: "liquid" },
+  { label: "Injection", value: "injection" },
+  { label: "Inhaler", value: "inhaler" },
+  { label: "Drops", value: "drops" },
+  { label: "Other", value: "other" },
 ];
 
 const frequencies: SelectOption[] = [
-  { label: 'Daily', value: 'daily' },
-  { label: 'Specific Days', value: 'specific_days' },
-  { label: 'Interval (Hours)', value: 'interval' },
+  { label: "Daily", value: "daily" },
+  { label: "Specific Days", value: "specific_days" },
+  { label: "Interval (Hours)", value: "interval" },
 ];
 
 export default function EditMedicineScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const colorScheme = useColorScheme();
-  const colors = colorScheme === 'dark' ? Colors.dark : Colors.light;
+  const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
 
   const [formData, setFormData] = useState({
-    name: '',
-    type: '',
-    dosage: '',
-    unit: '',
-    frequency: '',
-    start_date: '',
-    end_date: '',
-    notes: '',
+    name: "",
+    type: "",
+    dosage: "",
+    unit: "",
+    frequency: "",
+    start_date: "",
+    end_date: "",
+    notes: "",
   });
 
   const [loading, setLoading] = useState(true);
@@ -56,6 +59,7 @@ export default function EditMedicineScreen() {
 
   useEffect(() => {
     loadMedicine();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const loadMedicine = async () => {
@@ -68,14 +72,14 @@ export default function EditMedicineScreen() {
           dosage: medicine.dosage,
           unit: medicine.unit,
           frequency: medicine.frequency,
-          start_date: medicine.start_date.split('T')[0],
-          end_date: medicine.end_date ? medicine.end_date.split('T')[0] : '',
-          notes: medicine.notes || '',
+          start_date: medicine.start_date.split("T")[0],
+          end_date: medicine.end_date ? medicine.end_date.split("T")[0] : "",
+          notes: medicine.notes || "",
         });
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to load medicine');
-      console.error('Error loading medicine:', error);
+      Alert.alert("Error", "Failed to load medicine");
+      console.error("Error loading medicine:", error);
     } finally {
       setLoading(false);
     }
@@ -105,15 +109,15 @@ export default function EditMedicineScreen() {
         notes: formData.notes || undefined,
       });
 
-      Alert.alert('Success', 'Medicine updated successfully', [
+      Alert.alert("Success", "Medicine updated successfully", [
         {
-          text: 'OK',
+          text: "OK",
           onPress: () => router.back(),
         },
       ]);
     } catch (error) {
-      Alert.alert('Error', 'Failed to update medicine. Please try again.');
-      console.error('Error updating medicine:', error);
+      Alert.alert("Error", "Failed to update medicine. Please try again.");
+      console.error("Error updating medicine:", error);
     } finally {
       setSaving(false);
     }
@@ -125,7 +129,7 @@ export default function EditMedicineScreen() {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       <ScrollView
@@ -139,7 +143,7 @@ export default function EditMedicineScreen() {
             value={formData.name}
             onChangeText={(text) => {
               setFormData({ ...formData, name: text });
-              setErrors({ ...errors, name: '' });
+              setErrors({ ...errors, name: "" });
             }}
             placeholder="e.g., Aspirin"
             error={errors.name}
@@ -152,7 +156,7 @@ export default function EditMedicineScreen() {
             options={medicineTypes}
             onSelect={(value) => {
               setFormData({ ...formData, type: value });
-              setErrors({ ...errors, type: '' });
+              setErrors({ ...errors, type: "" });
             }}
             error={errors.type}
             required
@@ -164,7 +168,7 @@ export default function EditMedicineScreen() {
               value={formData.dosage}
               onChangeText={(text) => {
                 setFormData({ ...formData, dosage: text });
-                setErrors({ ...errors, dosage: '' });
+                setErrors({ ...errors, dosage: "" });
               }}
               placeholder="e.g., 500"
               keyboardType="numeric"
@@ -178,7 +182,7 @@ export default function EditMedicineScreen() {
               value={formData.unit}
               onChangeText={(text) => {
                 setFormData({ ...formData, unit: text });
-                setErrors({ ...errors, unit: '' });
+                setErrors({ ...errors, unit: "" });
               }}
               placeholder="e.g., mg"
               error={errors.unit}
@@ -201,7 +205,7 @@ export default function EditMedicineScreen() {
             value={formData.start_date}
             onChangeText={(text) => {
               setFormData({ ...formData, start_date: text });
-              setErrors({ ...errors, start_date: '' });
+              setErrors({ ...errors, start_date: "" });
             }}
             placeholder="YYYY-MM-DD"
             error={errors.start_date}
@@ -211,7 +215,9 @@ export default function EditMedicineScreen() {
           <Input
             label="End Date (Optional)"
             value={formData.end_date}
-            onChangeText={(text) => setFormData({ ...formData, end_date: text })}
+            onChangeText={(text) =>
+              setFormData({ ...formData, end_date: text })
+            }
             placeholder="YYYY-MM-DD"
           />
 
@@ -256,7 +262,7 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
   },
   row: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Spacing.md,
   },
   halfWidth: {
@@ -264,10 +270,10 @@ const styles = StyleSheet.create({
   },
   notesInput: {
     height: 100,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
   },
   actions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Spacing.md,
     marginTop: Spacing.lg,
   },
@@ -275,4 +281,3 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 });
-

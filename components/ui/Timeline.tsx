@@ -1,7 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet , useColorScheme } from 'react-native';
 import { Colors, Typography, Spacing, BorderRadius } from '../../constants/design';
-import { useColorScheme } from 'react-native';
 
 export interface TimelineItem {
   id: string;

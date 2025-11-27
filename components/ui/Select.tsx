@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ViewStyle } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ViewStyle , useColorScheme } from 'react-native';
 import { Colors, Typography, BorderRadius, Spacing, Layout } from '../../constants/design';
-import { useColorScheme } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Modal } from './Modal';
 

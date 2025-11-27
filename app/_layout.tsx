@@ -1,24 +1,25 @@
-import { useEffect, useState } from 'react';
-import { Stack, useRouter, useSegments } from 'expo-router';
-import { useColorScheme } from 'react-native';
-import { Colors } from '../constants/design';
-import { initDatabase } from '../lib/database/operations';
-import { initializeNotifications } from '../lib/notifications/setup';
-import { setupNotificationListeners } from '../lib/notifications/handlers';
-import { registerBackgroundFetchAsync } from '../lib/notifications/background-tasks';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Stack, useRouter, useSegments } from "expo-router";
+import { useEffect, useState } from "react";
+import { useColorScheme } from "react-native";
+import { Colors } from "../constants/design";
+import { initDatabase } from "../lib/database/operations";
+import { registerBackgroundFetchAsync } from "../lib/notifications/background-tasks";
+import { setupNotificationListeners } from "../lib/notifications/handlers";
+import { initializeNotifications } from "../lib/notifications/setup";
 
-const ONBOARDING_KEY = '@medicine_tracker_onboarding_complete';
+const ONBOARDING_KEY = "@medicine_tracker_onboarding_complete";
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  const colors = colorScheme === 'dark' ? Colors.dark : Colors.light;
+  const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
   const router = useRouter();
   const segments = useSegments();
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     initializeApp();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const initializeApp = async () => {
@@ -37,17 +38,17 @@ export default function RootLayout() {
 
       // Check if onboarding is complete
       const onboardingComplete = await AsyncStorage.getItem(ONBOARDING_KEY);
-      
+
       setIsReady(true);
 
       // Navigate to onboarding if not complete
-      if (!onboardingComplete && segments[0] !== 'onboarding') {
-        router.replace('/onboarding');
+      if (!onboardingComplete && segments[0] !== "onboarding") {
+        router.replace("/onboarding");
       }
 
       return cleanup;
     } catch (error) {
-      console.error('Error initializing app:', error);
+      console.error("Error initializing app:", error);
       setIsReady(true);
     }
   };
@@ -71,12 +72,12 @@ export default function RootLayout() {
     >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-      <Stack.Screen 
-        name="notification-screen" 
-        options={{ 
-          presentation: 'fullScreenModal',
+      <Stack.Screen
+        name="notification-screen"
+        options={{
+          presentation: "fullScreenModal",
           headerShown: false,
-        }} 
+        }}
       />
     </Stack>
   );

@@ -1,8 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity , useColorScheme } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/design';
-import { useColorScheme } from 'react-native';
 import { MedicineTypeIcon } from './MedicineTypeIcon';
 import { MedicineWithNextDose } from '../../types/medicine';
 import { formatTime } from '../../lib/utils/date-helpers';

@@ -1,23 +1,38 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Switch, Alert } from 'react-native';
-import { Colors, Typography, Spacing, BorderRadius } from '../../constants/design';
-import { useColorScheme } from 'react-native';
-import { Card } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
-import { Ionicons } from '@expo/vector-icons';
-import { getCurrentUser, ensureUserExists } from '../../lib/database/models/user';
-import { getEmergencyContactsByUserId } from '../../lib/database/models/emergency-contact';
-import { getNotificationSettingsByUserId, ensureNotificationSettings } from '../../lib/database/models/notification-settings';
-import { User, EmergencyContact, NotificationSettings } from '../../types/database';
-import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
+import { Ionicons } from "@expo/vector-icons";
+import React, { useEffect, useState } from "react";
+import {
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  useColorScheme,
+  View,
+} from "react-native";
+import { Button } from "../../components/ui/Button";
+import { Card } from "../../components/ui/Card";
+import { LoadingSpinner } from "../../components/ui/LoadingSpinner";
+import { Colors, Spacing, Typography } from "../../constants/design";
+import { getEmergencyContactsByUserId } from "../../lib/database/models/emergency-contact";
+import { ensureNotificationSettings } from "../../lib/database/models/notification-settings";
+import { ensureUserExists } from "../../lib/database/models/user";
+import {
+  EmergencyContact,
+  NotificationSettings,
+  User,
+} from "../../types/database";
 
 export default function ProfileScreen() {
   const colorScheme = useColorScheme();
-  const colors = colorScheme === 'dark' ? Colors.dark : Colors.light;
+  const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
 
   const [user, setUser] = useState<User | null>(null);
-  const [emergencyContacts, setEmergencyContacts] = useState<EmergencyContact[]>([]);
-  const [notificationSettings, setNotificationSettings] = useState<NotificationSettings | null>(null);
+  const [emergencyContacts, setEmergencyContacts] = useState<
+    EmergencyContact[]
+  >([]);
+  const [notificationSettings, setNotificationSettings] =
+    useState<NotificationSettings | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -35,39 +50,45 @@ export default function ProfileScreen() {
       const settings = await ensureNotificationSettings(userData.id);
       setNotificationSettings(settings);
     } catch (error) {
-      console.error('Error loading profile data:', error);
+      console.error("Error loading profile data:", error);
     } finally {
       setLoading(false);
     }
   };
 
   const handleEditProfile = () => {
-    Alert.alert('Edit Profile', 'Profile editing coming soon!');
+    Alert.alert("Edit Profile", "Profile editing coming soon!");
   };
 
   const handleAddEmergencyContact = () => {
-    Alert.alert('Add Contact', 'Emergency contact management coming soon!');
+    Alert.alert("Add Contact", "Emergency contact management coming soon!");
   };
 
   const handleToggleNotifications = async (enabled: boolean) => {
-    Alert.alert('Notifications', `Notifications ${enabled ? 'enabled' : 'disabled'}`);
+    Alert.alert(
+      "Notifications",
+      `Notifications ${enabled ? "enabled" : "disabled"}`
+    );
   };
 
   const handleExportData = () => {
-    Alert.alert('Export Data', 'Data export feature coming soon!');
+    Alert.alert("Export Data", "Data export feature coming soon!");
   };
 
   const handleClearData = () => {
     Alert.alert(
-      'Clear All Data',
-      'Are you sure you want to delete all your data? This action cannot be undone.',
+      "Clear All Data",
+      "Are you sure you want to delete all your data? This action cannot be undone.",
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: "Cancel", style: "cancel" },
         {
-          text: 'Delete All',
-          style: 'destructive',
+          text: "Delete All",
+          style: "destructive",
           onPress: () => {
-            Alert.alert('Coming Soon', 'Data clearing will be implemented soon');
+            Alert.alert(
+              "Coming Soon",
+              "Data clearing will be implemented soon"
+            );
           },
         },
       ]
@@ -80,36 +101,57 @@ export default function ProfileScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+      >
         {/* Profile Section */}
         <Card style={styles.section}>
           <View style={styles.profileHeader}>
             <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
               <Text style={styles.avatarText}>
-                {user?.name.charAt(0).toUpperCase() || 'U'}
+                {user?.name.charAt(0).toUpperCase() || "U"}
               </Text>
             </View>
             <View style={styles.profileInfo}>
-              <Text style={[styles.profileName, { color: colors.text }]}>{user?.name}</Text>
+              <Text style={[styles.profileName, { color: colors.text }]}>
+                {user?.name}
+              </Text>
               {user?.email && (
-                <Text style={[styles.profileDetail, { color: colors.textSecondary }]}>
+                <Text
+                  style={[
+                    styles.profileDetail,
+                    { color: colors.textSecondary },
+                  ]}
+                >
                   {user.email}
                 </Text>
               )}
               {user?.phone && (
-                <Text style={[styles.profileDetail, { color: colors.textSecondary }]}>
+                <Text
+                  style={[
+                    styles.profileDetail,
+                    { color: colors.textSecondary },
+                  ]}
+                >
                   {user.phone}
                 </Text>
               )}
             </View>
           </View>
-          <Button title="Edit Profile" onPress={handleEditProfile} variant="ghost" />
+          <Button
+            title="Edit Profile"
+            onPress={handleEditProfile}
+            variant="ghost"
+          />
         </Card>
 
         {/* Emergency Contacts */}
         <Card style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Emergency Contacts</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Emergency Contacts
+            </Text>
             <TouchableOpacity onPress={handleAddEmergencyContact}>
               <Ionicons name="add-circle" size={24} color={colors.primary} />
             </TouchableOpacity>
@@ -120,10 +162,23 @@ export default function ProfileScreen() {
             </Text>
           ) : (
             emergencyContacts.map((contact) => (
-              <View key={contact.id} style={[styles.contactItem, { borderBottomColor: colors.border }]}>
+              <View
+                key={contact.id}
+                style={[
+                  styles.contactItem,
+                  { borderBottomColor: colors.border },
+                ]}
+              >
                 <View style={styles.contactInfo}>
-                  <Text style={[styles.contactName, { color: colors.text }]}>{contact.name}</Text>
-                  <Text style={[styles.contactDetail, { color: colors.textSecondary }]}>
+                  <Text style={[styles.contactName, { color: colors.text }]}>
+                    {contact.name}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.contactDetail,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
                     {contact.relationship} • {contact.phone}
                   </Text>
                 </View>
@@ -132,7 +187,11 @@ export default function ProfileScreen() {
                     <Ionicons name="call" size={20} color={colors.primary} />
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.contactAction}>
-                    <Ionicons name="chatbubble" size={20} color={colors.primary} />
+                    <Ionicons
+                      name="chatbubble"
+                      size={20}
+                      color={colors.primary}
+                    />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -142,12 +201,20 @@ export default function ProfileScreen() {
 
         {/* Notification Settings */}
         <Card style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Notification Settings</Text>
-          
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Notification Settings
+          </Text>
+
           <View style={styles.settingItem}>
             <View style={styles.settingLeft}>
-              <Ionicons name="notifications" size={20} color={colors.textSecondary} />
-              <Text style={[styles.settingLabel, { color: colors.text }]}>Enable Notifications</Text>
+              <Ionicons
+                name="notifications"
+                size={20}
+                color={colors.textSecondary}
+              />
+              <Text style={[styles.settingLabel, { color: colors.text }]}>
+                Enable Notifications
+              </Text>
             </View>
             <Switch
               value={notificationSettings?.enabled || false}
@@ -158,18 +225,32 @@ export default function ProfileScreen() {
 
           <View style={styles.settingItem}>
             <View style={styles.settingLeft}>
-              <Ionicons name="volume-high" size={20} color={colors.textSecondary} />
-              <Text style={[styles.settingLabel, { color: colors.text }]}>Sound</Text>
+              <Ionicons
+                name="volume-high"
+                size={20}
+                color={colors.textSecondary}
+              />
+              <Text style={[styles.settingLabel, { color: colors.text }]}>
+                Sound
+              </Text>
             </View>
-            <Text style={[styles.settingValue, { color: colors.textSecondary }]}>
-              {notificationSettings?.sound || 'Default'}
+            <Text
+              style={[styles.settingValue, { color: colors.textSecondary }]}
+            >
+              {notificationSettings?.sound || "Default"}
             </Text>
           </View>
 
           <View style={styles.settingItem}>
             <View style={styles.settingLeft}>
-              <Ionicons name="phone-portrait" size={20} color={colors.textSecondary} />
-              <Text style={[styles.settingLabel, { color: colors.text }]}>Vibration</Text>
+              <Ionicons
+                name="phone-portrait"
+                size={20}
+                color={colors.textSecondary}
+              />
+              <Text style={[styles.settingLabel, { color: colors.text }]}>
+                Vibration
+              </Text>
             </View>
             <Switch
               value={notificationSettings?.vibration || false}
@@ -181,7 +262,9 @@ export default function ProfileScreen() {
           <View style={styles.settingItem}>
             <View style={styles.settingLeft}>
               <Ionicons name="expand" size={20} color={colors.textSecondary} />
-              <Text style={[styles.settingLabel, { color: colors.text }]}>Full Screen Alerts</Text>
+              <Text style={[styles.settingLabel, { color: colors.text }]}>
+                Full Screen Alerts
+              </Text>
             </View>
             <Switch
               value={notificationSettings?.full_screen_enabled || false}
@@ -193,31 +276,58 @@ export default function ProfileScreen() {
 
         {/* App Settings */}
         <Card style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>App Settings</Text>
-          
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            App Settings
+          </Text>
+
           <TouchableOpacity style={styles.settingItem}>
             <View style={styles.settingLeft}>
               <Ionicons name="moon" size={20} color={colors.textSecondary} />
-              <Text style={[styles.settingLabel, { color: colors.text }]}>Theme</Text>
+              <Text style={[styles.settingLabel, { color: colors.text }]}>
+                Theme
+              </Text>
             </View>
             <View style={styles.settingRight}>
-              <Text style={[styles.settingValue, { color: colors.textSecondary }]}>Auto</Text>
-              <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+              <Text
+                style={[styles.settingValue, { color: colors.textSecondary }]}
+              >
+                Auto
+              </Text>
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={colors.textSecondary}
+              />
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.settingItem} onPress={handleExportData}>
+          <TouchableOpacity
+            style={styles.settingItem}
+            onPress={handleExportData}
+          >
             <View style={styles.settingLeft}>
-              <Ionicons name="download" size={20} color={colors.textSecondary} />
-              <Text style={[styles.settingLabel, { color: colors.text }]}>Export Data</Text>
+              <Ionicons
+                name="download"
+                size={20}
+                color={colors.textSecondary}
+              />
+              <Text style={[styles.settingLabel, { color: colors.text }]}>
+                Export Data
+              </Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color={colors.textSecondary}
+            />
           </TouchableOpacity>
         </Card>
 
         {/* Danger Zone */}
         <Card style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.danger }]}>Danger Zone</Text>
+          <Text style={[styles.sectionTitle, { color: colors.danger }]}>
+            Danger Zone
+          </Text>
           <Button
             title="Clear All Data"
             onPress={handleClearData}
@@ -254,9 +364,9 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: Spacing.md,
   },
   sectionTitle: {
@@ -265,28 +375,28 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   profileHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: Spacing.lg,
   },
   avatar: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   avatarText: {
-    fontSize: Typography.fontSize['3xl'],
+    fontSize: Typography.fontSize["3xl"],
     fontWeight: Typography.fontWeight.bold,
-    color: '#FFFFFF',
+    color: "#FFFFFF",
   },
   profileInfo: {
     marginLeft: Spacing.lg,
     flex: 1,
   },
   profileName: {
-    fontSize: Typography.fontSize['2xl'],
+    fontSize: Typography.fontSize["2xl"],
     fontWeight: Typography.fontWeight.bold,
   },
   profileDetail: {
@@ -295,13 +405,13 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: Typography.fontSize.base,
-    textAlign: 'center',
+    textAlign: "center",
     padding: Spacing.lg,
   },
   contactItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
   },
@@ -317,27 +427,27 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xs,
   },
   contactActions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Spacing.md,
   },
   contactAction: {
     padding: Spacing.sm,
   },
   settingItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingVertical: Spacing.md,
   },
   settingLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
     gap: Spacing.md,
   },
   settingRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Spacing.sm,
   },
   settingLabel: {
@@ -347,10 +457,10 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.base,
   },
   dangerButton: {
-    width: '100%',
+    width: "100%",
   },
   appInfo: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: Spacing.xl,
   },
   appInfoText: {
@@ -358,4 +468,3 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xs,
   },
 });
-

@@ -1,14 +1,29 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { Colors, Typography, Spacing, BorderRadius } from '../../constants/design';
-import { useColorScheme } from 'react-native';
-import { Card } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
-import { EmptyState } from '../../components/ui/EmptyState';
-import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
-import { Ionicons } from '@expo/vector-icons';
-import { getAllMedicineGroups, getGroupMemberCount } from '../../lib/database/models/groups';
-import { MedicineGroup } from '../../types/database';
+import { Ionicons } from "@expo/vector-icons";
+import React, { useEffect, useState } from "react";
+import {
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useColorScheme,
+  View,
+} from "react-native";
+import { Button } from "../../components/ui/Button";
+import { Card } from "../../components/ui/Card";
+import { EmptyState } from "../../components/ui/EmptyState";
+import { LoadingSpinner } from "../../components/ui/LoadingSpinner";
+import {
+  BorderRadius,
+  Colors,
+  Spacing,
+  Typography,
+} from "../../constants/design";
+import {
+  getAllMedicineGroups,
+  getGroupMemberCount,
+} from "../../lib/database/models/groups";
+import { MedicineGroup } from "../../types/database";
 
 interface GroupWithCount extends MedicineGroup {
   memberCount: number;
@@ -16,7 +31,7 @@ interface GroupWithCount extends MedicineGroup {
 
 export default function GroupsScreen() {
   const colorScheme = useColorScheme();
-  const colors = colorScheme === 'dark' ? Colors.dark : Colors.light;
+  const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
 
   const [groups, setGroups] = useState<GroupWithCount[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,7 +44,7 @@ export default function GroupsScreen() {
     try {
       setLoading(true);
       const groupsData = await getAllMedicineGroups();
-      
+
       // Get member counts for each group
       const groupsWithCounts = await Promise.all(
         groupsData.map(async (group) => {
@@ -37,28 +52,34 @@ export default function GroupsScreen() {
           return { ...group, memberCount: count };
         })
       );
-      
+
       setGroups(groupsWithCounts);
     } catch (error) {
-      console.error('Error loading groups:', error);
+      console.error("Error loading groups:", error);
     } finally {
       setLoading(false);
     }
   };
 
   const handleCreateGroup = () => {
-    Alert.alert('Create Group', 'Group creation feature coming soon!');
+    Alert.alert("Create Group", "Group creation feature coming soon!");
   };
 
   const handleGroupPress = (group: GroupWithCount) => {
     Alert.alert(
       group.name,
-      `${group.description || 'No description'}\n\n${group.memberCount} medicine(s) in this group`,
+      `${group.description || "No description"}\n\n${
+        group.memberCount
+      } medicine(s) in this group`,
       [
-        { text: 'OK' },
+        { text: "OK" },
         {
-          text: 'Share',
-          onPress: () => Alert.alert('Coming Soon', 'Sharing feature will be available soon'),
+          text: "Share",
+          onPress: () =>
+            Alert.alert(
+              "Coming Soon",
+              "Sharing feature will be available soon"
+            ),
         },
       ]
     );
@@ -70,16 +91,22 @@ export default function GroupsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+      >
         {/* Info Card */}
         <Card style={styles.infoCard}>
           <View style={styles.infoHeader}>
             <Ionicons name="information-circle" size={24} color={colors.info} />
-            <Text style={[styles.infoTitle, { color: colors.text }]}>About Medicine Groups</Text>
+            <Text style={[styles.infoTitle, { color: colors.text }]}>
+              About Medicine Groups
+            </Text>
           </View>
           <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-            Create groups to organize your medicines and share them with family members or caregivers.
-            Sharing features will be available in a future update.
+            Create groups to organize your medicines and share them with family
+            members or caregivers. Sharing features will be available in a
+            future update.
           </Text>
         </Card>
 
@@ -102,24 +129,48 @@ export default function GroupsScreen() {
               >
                 <Card style={styles.groupCard}>
                   <View style={styles.groupHeader}>
-                    <View style={[styles.groupIcon, { backgroundColor: colors.primary + '20' }]}>
-                      <Ionicons name="people" size={24} color={colors.primary} />
+                    <View
+                      style={[
+                        styles.groupIcon,
+                        { backgroundColor: colors.primary + "20" },
+                      ]}
+                    >
+                      <Ionicons
+                        name="people"
+                        size={24}
+                        color={colors.primary}
+                      />
                     </View>
                     <View style={styles.groupInfo}>
-                      <Text style={[styles.groupName, { color: colors.text }]}>{group.name}</Text>
+                      <Text style={[styles.groupName, { color: colors.text }]}>
+                        {group.name}
+                      </Text>
                       {group.description && (
                         <Text
-                          style={[styles.groupDescription, { color: colors.textSecondary }]}
+                          style={[
+                            styles.groupDescription,
+                            { color: colors.textSecondary },
+                          ]}
                           numberOfLines={2}
                         >
                           {group.description}
                         </Text>
                       )}
-                      <Text style={[styles.groupMeta, { color: colors.textTertiary }]}>
-                        {group.memberCount} medicine{group.memberCount !== 1 ? 's' : ''}
+                      <Text
+                        style={[
+                          styles.groupMeta,
+                          { color: colors.textTertiary },
+                        ]}
+                      >
+                        {group.memberCount} medicine
+                        {group.memberCount !== 1 ? "s" : ""}
                       </Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                    <Ionicons
+                      name="chevron-forward"
+                      size={20}
+                      color={colors.textSecondary}
+                    />
                   </View>
                 </Card>
               </TouchableOpacity>
@@ -143,30 +194,66 @@ export default function GroupsScreen() {
             </Text>
           </View>
           <Text style={[styles.featureText, { color: colors.textSecondary }]}>
-            Soon you'll be able to:
+            Soon you&apos;ll be able to:
           </Text>
           <View style={styles.featureList}>
             <View style={styles.featureItem}>
-              <Ionicons name="checkmark-circle" size={20} color={colors.success} />
-              <Text style={[styles.featureItemText, { color: colors.textSecondary }]}>
+              <Ionicons
+                name="checkmark-circle"
+                size={20}
+                color={colors.success}
+              />
+              <Text
+                style={[
+                  styles.featureItemText,
+                  { color: colors.textSecondary },
+                ]}
+              >
                 Share medicine schedules with family
               </Text>
             </View>
             <View style={styles.featureItem}>
-              <Ionicons name="checkmark-circle" size={20} color={colors.success} />
-              <Text style={[styles.featureItemText, { color: colors.textSecondary }]}>
+              <Ionicons
+                name="checkmark-circle"
+                size={20}
+                color={colors.success}
+              />
+              <Text
+                style={[
+                  styles.featureItemText,
+                  { color: colors.textSecondary },
+                ]}
+              >
                 Get notified when shared medicines are missed
               </Text>
             </View>
             <View style={styles.featureItem}>
-              <Ionicons name="checkmark-circle" size={20} color={colors.success} />
-              <Text style={[styles.featureItemText, { color: colors.textSecondary }]}>
+              <Ionicons
+                name="checkmark-circle"
+                size={20}
+                color={colors.success}
+              />
+              <Text
+                style={[
+                  styles.featureItemText,
+                  { color: colors.textSecondary },
+                ]}
+              >
                 Manage medicines for multiple people
               </Text>
             </View>
             <View style={styles.featureItem}>
-              <Ionicons name="checkmark-circle" size={20} color={colors.success} />
-              <Text style={[styles.featureItemText, { color: colors.textSecondary }]}>
+              <Ionicons
+                name="checkmark-circle"
+                size={20}
+                color={colors.success}
+              />
+              <Text
+                style={[
+                  styles.featureItemText,
+                  { color: colors.textSecondary },
+                ]}
+              >
                 Control who can view or edit schedules
               </Text>
             </View>
@@ -201,8 +288,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   infoHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Spacing.sm,
     marginBottom: Spacing.sm,
   },
@@ -218,15 +305,15 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   groupHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   groupIcon: {
     width: 48,
     height: 48,
     borderRadius: BorderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   groupInfo: {
     flex: 1,
@@ -251,7 +338,7 @@ const styles = StyleSheet.create({
     marginTop: Spacing.lg,
   },
   featureHeader: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: Spacing.md,
   },
   featureTitle: {
@@ -267,8 +354,8 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
   },
   featureItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     gap: Spacing.sm,
   },
   featureItemText: {
@@ -276,19 +363,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   fab: {
-    position: 'absolute',
+    position: "absolute",
     right: Spacing.lg,
     bottom: Spacing.lg,
     width: 56,
     height: 56,
     borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     elevation: 8,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
   },
 });
-
