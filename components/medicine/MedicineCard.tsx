@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity , useColorScheme } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, useColorScheme, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/design';
 import { MedicineTypeIcon } from './MedicineTypeIcon';
@@ -22,11 +22,23 @@ export const MedicineCard: React.FC<MedicineCardProps> = ({ medicine }) => {
 
   return (
     <TouchableOpacity
-      style={[styles.card, { backgroundColor: colors.surface, ...Shadows.sm }]}
+      style={[
+        styles.card,
+        { backgroundColor: colors.surface, ...Shadows.sm },
+        medicine.color && { borderLeftWidth: 4, borderLeftColor: medicine.color },
+      ]}
       onPress={handlePress}
       activeOpacity={0.7}
     >
-      <MedicineTypeIcon type={medicine.type} />
+      {medicine.image ? (
+        <Image source={{ uri: medicine.image }} style={styles.medicineImage} />
+      ) : medicine.color ? (
+        <View style={[styles.colorIcon, { backgroundColor: medicine.color }]}>
+          <MedicineTypeIcon type={medicine.type} size={24} color="#FFFFFF" />
+        </View>
+      ) : (
+        <MedicineTypeIcon type={medicine.type} />
+      )}
       <View style={styles.content}>
         <Text style={[styles.name, { color: colors.text }]}>{medicine.name}</Text>
         <Text style={[styles.dosage, { color: colors.textSecondary }]}>
@@ -48,6 +60,19 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     borderRadius: BorderRadius.lg,
     marginBottom: Spacing.md,
+  },
+  medicineImage: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    resizeMode: 'cover',
+  },
+  colorIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   content: {
     flex: 1,

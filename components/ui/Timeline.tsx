@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet , useColorScheme } from 'react-native';
+import { View, Text, StyleSheet , useColorScheme, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius } from '../../constants/design';
 
 export interface TimelineItem {
@@ -12,9 +13,17 @@ export interface TimelineItem {
 
 interface TimelineProps {
   items: TimelineItem[];
+  onTakeDose?: (id: string) => void;
+  onSkipDose?: (id: string) => void;
+  showActions?: boolean;
 }
 
-export const Timeline: React.FC<TimelineProps> = ({ items }) => {
+export const Timeline: React.FC<TimelineProps> = ({ 
+  items, 
+  onTakeDose, 
+  onSkipDose, 
+  showActions = false 
+}) => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const colors = isDark ? Colors.dark : Colors.light;
@@ -32,6 +41,10 @@ export const Timeline: React.FC<TimelineProps> = ({ items }) => {
       default:
         return colors.primary;
     }
+  };
+
+  const canShowActions = (item: TimelineItem) => {
+    return showActions && (item.status === 'scheduled' || item.status === 'overdue');
   };
 
   return (
@@ -71,6 +84,25 @@ export const Timeline: React.FC<TimelineProps> = ({ items }) => {
                 <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
                   {item.subtitle}
                 </Text>
+              )}
+              
+              {canShowActions(item) && (
+                <View style={styles.actionsContainer}>
+                  <TouchableOpacity
+                    style={[styles.actionButton, { backgroundColor: colors.success }]}
+                    onPress={() => onTakeDose?.(item.id)}
+                  >
+                    <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+                    <Text style={styles.actionButtonText}>Take</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.actionButton, { backgroundColor: colors.warning }]}
+                    onPress={() => onSkipDose?.(item.id)}
+                  >
+                    <Ionicons name="close" size={16} color="#FFFFFF" />
+                    <Text style={styles.actionButtonText}>Skip</Text>
+                  </TouchableOpacity>
+                </View>
               )}
             </View>
           </View>
@@ -126,6 +158,26 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: Typography.fontSize.sm,
     marginTop: Spacing.xs,
+  },
+  actionsContainer: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.md,
+    gap: Spacing.xs,
+    flex: 1,
+  },
+  actionButtonText: {
+    color: '#FFFFFF',
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
   },
 });
 

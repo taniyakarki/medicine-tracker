@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     position: "absolute",
-    top: 60,
+    top: Spacing.lg,
     right: Spacing.lg,
     padding: Spacing.sm,
   },

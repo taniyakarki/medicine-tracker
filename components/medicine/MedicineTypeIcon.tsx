@@ -6,12 +6,13 @@ import { getMedicineTypeColor } from '../../constants/design';
 interface MedicineTypeIconProps {
   type: string;
   size?: number;
+  color?: string;
 }
 
-export const MedicineTypeIcon: React.FC<MedicineTypeIconProps> = ({ type, size = 24 }) => {
+export const MedicineTypeIcon: React.FC<MedicineTypeIconProps> = ({ type, size = 24, color: customColor }) => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const color = getMedicineTypeColor(type, isDark);
+  const color = customColor || getMedicineTypeColor(type, isDark);
 
   const getIconName = (): keyof typeof Ionicons.glyphMap => {
     switch (type) {

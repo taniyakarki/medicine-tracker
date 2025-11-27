@@ -16,6 +16,8 @@ export const Colors = {
     backgroundSecondary: '#F9FAFB',
     surface: '#FFFFFF',
     surfaceSecondary: '#F3F4F6',
+    card: '#FFFFFF',
+    cardSecondary: '#F9FAFB',
     
     text: '#111827',
     textSecondary: '#6B7280',
@@ -23,6 +25,7 @@ export const Colors = {
     
     border: '#E5E7EB',
     borderLight: '#F3F4F6',
+    error: '#EF4444',
     
     // Medicine type colors
     pill: '#8B5CF6', // Purple
@@ -57,6 +60,8 @@ export const Colors = {
     backgroundSecondary: '#1F2937',
     surface: '#1F2937',
     surfaceSecondary: '#374151',
+    card: '#1F2937',
+    cardSecondary: '#374151',
     
     text: '#F9FAFB',
     textSecondary: '#D1D5DB',
@@ -64,6 +69,7 @@ export const Colors = {
     
     border: '#374151',
     borderLight: '#4B5563',
+    error: '#F87171',
     
     // Medicine type colors
     pill: '#A78BFA',

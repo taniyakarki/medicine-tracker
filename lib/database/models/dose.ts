@@ -57,7 +57,7 @@ export const getUpcomingDoses = async (
   userId: string,
   hours: number = 24
 ): Promise<DoseWithMedicine[]> => {
-  const now = getCurrentTimestamp();
+  const now = new Date().toISOString();
   const future = new Date(Date.now() + hours * 60 * 60 * 1000).toISOString();
 
   return await executeQuery<DoseWithMedicine>(
@@ -74,7 +74,7 @@ export const getUpcomingDoses = async (
      FROM ${TABLE_NAME} d
      JOIN medicines m ON d.medicine_id = m.id
      WHERE m.user_id = ? 
-       AND d.scheduled_time >= ? 
+       AND d.scheduled_time > ? 
        AND d.scheduled_time <= ?
        AND d.status = 'scheduled'
        AND m.is_active = 1
@@ -115,6 +115,38 @@ export const getTodayDoses = async (
        AND m.is_active = 1
      ORDER BY d.scheduled_time ASC`,
     [userId, startOfDay.toISOString(), endOfDay.toISOString()]
+  ).then((doses) =>
+    doses.map((d) => ({
+      ...d,
+      medicine: JSON.parse(d.medicine as any),
+    }))
+  );
+};
+
+export const getDosesInDateRange = async (
+  userId: string,
+  startDate: string,
+  endDate: string
+): Promise<DoseWithMedicine[]> => {
+  return await executeQuery<DoseWithMedicine>(
+    `SELECT 
+      d.*,
+      json_object(
+        'id', m.id,
+        'name', m.name,
+        'type', m.type,
+        'dosage', m.dosage,
+        'unit', m.unit,
+        'color', m.color
+      ) as medicine
+     FROM ${TABLE_NAME} d
+     JOIN medicines m ON d.medicine_id = m.id
+     WHERE m.user_id = ? 
+       AND d.scheduled_time >= ? 
+       AND d.scheduled_time <= ?
+       AND m.is_active = 1
+     ORDER BY d.scheduled_time DESC`,
+    [userId, startDate, endDate]
   ).then((doses) =>
     doses.map((d) => ({
       ...d,
@@ -226,6 +258,41 @@ export const getRecentDoseActivity = async (
      ORDER BY d.taken_time DESC, d.scheduled_time DESC
      LIMIT ?`,
     [userId, limit]
+  ).then((doses) =>
+    doses.map((d) => ({
+      ...d,
+      medicine: JSON.parse(d.medicine as any),
+    }))
+  );
+};
+
+export const getPastPendingDoses = async (
+  userId: string,
+  hours: number = 24
+): Promise<DoseWithMedicine[]> => {
+  const now = new Date().toISOString();
+  const past = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+
+  return await executeQuery<DoseWithMedicine>(
+    `SELECT 
+      d.*,
+      json_object(
+        'id', m.id,
+        'name', m.name,
+        'type', m.type,
+        'dosage', m.dosage,
+        'unit', m.unit,
+        'color', m.color
+      ) as medicine
+     FROM ${TABLE_NAME} d
+     JOIN medicines m ON d.medicine_id = m.id
+     WHERE m.user_id = ? 
+       AND d.scheduled_time >= ? 
+       AND d.scheduled_time < ?
+       AND (d.status = 'scheduled' OR d.status = 'missed')
+       AND m.is_active = 1
+     ORDER BY d.scheduled_time DESC`,
+    [userId, past, now]
   ).then((doses) =>
     doses.map((d) => ({
       ...d,

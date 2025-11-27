@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { View, ScrollView, StyleSheet, RefreshControl, TouchableOpacity , useColorScheme } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Colors, Spacing } from '../../../constants/design';
 import { useMedicines } from '../../../lib/hooks/useMedicines';
 import { MedicineCard } from '../../../components/medicine/MedicineCard';
@@ -14,6 +14,13 @@ export default function MedicinesListScreen() {
   const colors = colorScheme === 'dark' ? Colors.dark : Colors.light;
   const { medicines, loading, refresh } = useMedicines();
   const [refreshing, setRefreshing] = useState(false);
+
+  // Reload medicines when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [refresh])
+  );
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -76,6 +83,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: Spacing.md,
+    paddingBottom: 100,
     flexGrow: 1,
   },
   fab: {

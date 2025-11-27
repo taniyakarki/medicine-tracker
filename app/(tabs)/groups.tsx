@@ -9,6 +9,7 @@ import {
   useColorScheme,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { EmptyState } from "../../components/ui/EmptyState";
@@ -32,6 +33,7 @@ interface GroupWithCount extends MedicineGroup {
 export default function GroupsScreen() {
   const colorScheme = useColorScheme();
   const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
+  const insets = useSafeAreaInsets();
 
   const [groups, setGroups] = useState<GroupWithCount[]>([]);
   const [loading, setLoading] = useState(true);
@@ -93,7 +95,10 @@ export default function GroupsScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: insets.top > 0 ? insets.top : Spacing.md },
+        ]}
       >
         {/* Info Card */}
         <Card style={styles.infoCard}>
@@ -281,8 +286,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: Spacing.md,
-    paddingBottom: 80,
+    paddingHorizontal: Spacing.md,
+    paddingBottom: 100,
   },
   infoCard: {
     marginBottom: Spacing.md,

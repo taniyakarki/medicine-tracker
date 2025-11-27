@@ -102,6 +102,17 @@ export const initializeNotifications = async (): Promise<boolean> => {
     }
 
     await setupNotificationCategories();
+    
+    // Reschedule all notifications on app start
+    try {
+      const { rescheduleAllNotifications } = await import('./scheduler');
+      await rescheduleAllNotifications();
+      console.log('All notifications rescheduled on app initialization');
+    } catch (scheduleError) {
+      console.error('Error rescheduling notifications on init:', scheduleError);
+      // Don't fail initialization if rescheduling fails
+    }
+    
     return true;
   } catch (error) {
     console.error('Error initializing notifications:', error);

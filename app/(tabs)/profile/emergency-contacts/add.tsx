@@ -1,0 +1,435 @@
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import React, { useState } from "react";
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  useColorScheme,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Button } from "../../../../components/ui/Button";
+import { Colors, Spacing, Typography } from "../../../../constants/design";
+import { createEmergencyContact } from "../../../../lib/database/models/emergency-contact";
+import { ensureUserExists } from "../../../../lib/database/models/user";
+
+export default function AddEmergencyContactScreen() {
+  const colorScheme = useColorScheme();
+  const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
+  const insets = useSafeAreaInsets();
+
+  const [name, setName] = useState("");
+  const [relationship, setRelationship] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [isPrimary, setIsPrimary] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState<{
+    name?: string;
+    relationship?: string;
+    phone?: string;
+    email?: string;
+  }>({});
+
+  const validateForm = (): boolean => {
+    const newErrors: typeof errors = {};
+
+    if (!name.trim()) {
+      newErrors.name = "Name is required";
+    }
+
+    if (!relationship.trim()) {
+      newErrors.relationship = "Relationship is required";
+    }
+
+    if (!phone.trim()) {
+      newErrors.phone = "Phone number is required";
+    } else if (!/^[\d\s\-\+\(\)]+$/.test(phone)) {
+      newErrors.phone = "Invalid phone number format";
+    }
+
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      newErrors.email = "Invalid email format";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSave = async () => {
+    if (!validateForm()) {
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const user = await ensureUserExists();
+      await createEmergencyContact({
+        user_id: user.id,
+        name: name.trim(),
+        relationship: relationship.trim(),
+        phone: phone.trim(),
+        email: email.trim() || undefined,
+        priority: isPrimary ? 1 : 0,
+      });
+
+      Alert.alert("Success", "Emergency contact added successfully", [
+        {
+          text: "OK",
+          onPress: () => router.back(),
+        },
+      ]);
+    } catch (error) {
+      console.error("Error adding emergency contact:", error);
+      Alert.alert("Error", "Failed to add contact. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <KeyboardAvoidingView
+        style={styles.keyboardView}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <View
+          style={[
+            styles.header,
+            {
+              paddingTop: insets.top > 0 ? insets.top : Spacing.md,
+              borderBottomColor: colors.border,
+            },
+          ]}
+        >
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>
+            Add Emergency Contact
+          </Text>
+          <View style={styles.placeholder} />
+        </View>
+
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+      >
+        <View style={styles.form}>
+          {/* Name Field */}
+          <View style={styles.fieldContainer}>
+            <Text style={[styles.label, { color: colors.text }]}>
+              Name <Text style={styles.required}>*</Text>
+            </Text>
+            <View
+              style={[
+                styles.inputContainer,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: errors.name ? colors.danger : colors.border,
+                },
+              ]}
+            >
+              <Ionicons
+                name="person-outline"
+                size={20}
+                color={colors.textSecondary}
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={[styles.input, { color: colors.text }]}
+                value={name}
+                onChangeText={(text) => {
+                  setName(text);
+                  if (errors.name) {
+                    setErrors({ ...errors, name: undefined });
+                  }
+                }}
+                placeholder="Enter contact name"
+                placeholderTextColor={colors.textTertiary}
+                autoCapitalize="words"
+              />
+            </View>
+            {errors.name && (
+              <Text style={[styles.errorText, { color: colors.danger }]}>
+                {errors.name}
+              </Text>
+            )}
+          </View>
+
+          {/* Relationship Field */}
+          <View style={styles.fieldContainer}>
+            <Text style={[styles.label, { color: colors.text }]}>
+              Relationship <Text style={styles.required}>*</Text>
+            </Text>
+            <View
+              style={[
+                styles.inputContainer,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: errors.relationship
+                    ? colors.danger
+                    : colors.border,
+                },
+              ]}
+            >
+              <Ionicons
+                name="people-outline"
+                size={20}
+                color={colors.textSecondary}
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={[styles.input, { color: colors.text }]}
+                value={relationship}
+                onChangeText={(text) => {
+                  setRelationship(text);
+                  if (errors.relationship) {
+                    setErrors({ ...errors, relationship: undefined });
+                  }
+                }}
+                placeholder="e.g., Spouse, Parent, Friend"
+                placeholderTextColor={colors.textTertiary}
+                autoCapitalize="words"
+              />
+            </View>
+            {errors.relationship && (
+              <Text style={[styles.errorText, { color: colors.danger }]}>
+                {errors.relationship}
+              </Text>
+            )}
+          </View>
+
+          {/* Phone Field */}
+          <View style={styles.fieldContainer}>
+            <Text style={[styles.label, { color: colors.text }]}>
+              Phone Number <Text style={styles.required}>*</Text>
+            </Text>
+            <View
+              style={[
+                styles.inputContainer,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: errors.phone ? colors.danger : colors.border,
+                },
+              ]}
+            >
+              <Ionicons
+                name="call-outline"
+                size={20}
+                color={colors.textSecondary}
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={[styles.input, { color: colors.text }]}
+                value={phone}
+                onChangeText={(text) => {
+                  setPhone(text);
+                  if (errors.phone) {
+                    setErrors({ ...errors, phone: undefined });
+                  }
+                }}
+                placeholder="Enter phone number"
+                placeholderTextColor={colors.textTertiary}
+                keyboardType="phone-pad"
+              />
+            </View>
+            {errors.phone && (
+              <Text style={[styles.errorText, { color: colors.danger }]}>
+                {errors.phone}
+              </Text>
+            )}
+          </View>
+
+          {/* Email Field */}
+          <View style={styles.fieldContainer}>
+            <Text style={[styles.label, { color: colors.text }]}>
+              Email (Optional)
+            </Text>
+            <View
+              style={[
+                styles.inputContainer,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: errors.email ? colors.danger : colors.border,
+                },
+              ]}
+            >
+              <Ionicons
+                name="mail-outline"
+                size={20}
+                color={colors.textSecondary}
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={[styles.input, { color: colors.text }]}
+                value={email}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  if (errors.email) {
+                    setErrors({ ...errors, email: undefined });
+                  }
+                }}
+                placeholder="Enter email address"
+                placeholderTextColor={colors.textTertiary}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
+            {errors.email && (
+              <Text style={[styles.errorText, { color: colors.danger }]}>
+                {errors.email}
+              </Text>
+            )}
+          </View>
+
+          {/* Primary Contact Toggle */}
+          <View style={styles.switchContainer}>
+            <View style={styles.switchLeft}>
+              <Ionicons name="star" size={20} color={colors.textSecondary} />
+              <View style={styles.switchTextContainer}>
+                <Text style={[styles.label, { color: colors.text }]}>
+                  Primary Contact
+                </Text>
+                <Text
+                  style={[styles.switchDescription, { color: colors.textSecondary }]}
+                >
+                  Mark as your main emergency contact
+                </Text>
+              </View>
+            </View>
+            <Switch
+              value={isPrimary}
+              onValueChange={setIsPrimary}
+              trackColor={{ false: colors.border, true: colors.primary }}
+            />
+          </View>
+        </View>
+      </ScrollView>
+
+      {/* Save Button */}
+      <View
+        style={[
+          styles.footer,
+          {
+            backgroundColor: colors.background,
+            borderTopColor: colors.border,
+            paddingBottom: insets.bottom > 0 ? insets.bottom : Spacing.lg,
+          },
+        ]}
+      >
+        <Button
+          title={saving ? "Saving..." : "Add Contact"}
+          onPress={handleSave}
+          disabled={saving}
+          style={styles.saveButton}
+        />
+      </View>
+      </KeyboardAvoidingView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  keyboardView: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: Spacing.md,
+    paddingBottom: Spacing.md,
+    borderBottomWidth: 1,
+  },
+  backButton: {
+    padding: Spacing.sm,
+  },
+  headerTitle: {
+    fontSize: Typography.fontSize.xl,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  placeholder: {
+    width: 40,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: Spacing.lg,
+    paddingBottom: 100,
+  },
+  form: {
+    gap: Spacing.lg,
+  },
+  fieldContainer: {
+    gap: Spacing.sm,
+  },
+  label: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  required: {
+    color: Colors.light.danger,
+  },
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: Spacing.md,
+  },
+  inputIcon: {
+    marginRight: Spacing.sm,
+  },
+  input: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    fontSize: Typography.fontSize.base,
+  },
+  errorText: {
+    fontSize: Typography.fontSize.sm,
+    marginTop: Spacing.xs,
+  },
+  switchContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: Spacing.sm,
+  },
+  switchLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+    gap: Spacing.md,
+  },
+  switchTextContainer: {
+    flex: 1,
+  },
+  switchDescription: {
+    fontSize: Typography.fontSize.sm,
+    marginTop: Spacing.xs,
+  },
+  footer: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+    borderTopWidth: 1,
+  },
+  saveButton: {
+    width: "100%",
+  },
+});
+

@@ -164,6 +164,18 @@ The app is designed for easy backend integration:
 
 This project is private and proprietary.
 
+## Documentation
+
+Comprehensive documentation is available in the [`docs/`](docs/) folder:
+
+- **Getting Started**: [Section 1 Features Guide](docs/SECTION_1_FEATURES_GUIDE.md)
+- **User Guides**: [Dose Actions Quick Guide](docs/DOSE_ACTIONS_QUICK_GUIDE.md)
+- **Implementation**: [Implementation Complete](docs/IMPLEMENTATION_COMPLETE.md)
+- **Architecture**: [Dose Actions Architecture](docs/DOSE_ACTIONS_ARCHITECTURE.md)
+- **Technical**: [Database Update Fix](docs/DATABASE_UPDATE_FIX.md)
+
+See the [Documentation Index](docs/README.md) for a complete list of all documentation.
+
 ## Support
 
 For issues or questions, please contact the development team.

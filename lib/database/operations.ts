@@ -149,8 +149,13 @@ export const update = async <T extends Record<string, any>>(
   id: string,
   data: Partial<T>
 ): Promise<void> => {
-  const updated_at = getCurrentTimestamp();
-  const fullData = { ...data, updated_at };
+  // Only add updated_at for tables that have this column
+  const tablesWithUpdatedAt = ['users', 'medicines', 'schedules', 'notification_settings'];
+  const shouldAddUpdatedAt = tablesWithUpdatedAt.includes(table);
+  
+  const fullData = shouldAddUpdatedAt 
+    ? { ...data, updated_at: getCurrentTimestamp() }
+    : { ...data };
 
   const columns = Object.keys(fullData);
   const setClause = columns.map((col) => `${col} = ?`).join(", ");
