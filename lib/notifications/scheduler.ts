@@ -70,8 +70,8 @@ export const scheduleMedicineNotifications = async (
     }
 
     const now = new Date();
-    // Add a 1-minute buffer to prevent immediate notifications
-    const bufferTime = new Date(now.getTime() + 60 * 1000);
+    // Add a 2-minute buffer to prevent immediate notifications
+    const bufferTime = new Date(now.getTime() + 2 * 60 * 1000);
     const endDate = addDays(now, daysAhead);
 
     // Check if medicine has ended

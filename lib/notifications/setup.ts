@@ -3,14 +3,13 @@ import * as Device from 'expo-device';
 import { Platform, Alert } from 'react-native';
 
 // Configure notification behavior
+// Notifications should only show when app is in background/closed
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
+    shouldPlaySound: false,
     shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-    severity: 'high' as const,
+    shouldShowBanner: false,
+    shouldShowList: false,
   }),
 });
 
@@ -102,16 +101,6 @@ export const initializeNotifications = async (): Promise<boolean> => {
     }
 
     await setupNotificationCategories();
-    
-    // Reschedule all notifications on app start
-    try {
-      const { rescheduleAllNotifications } = await import('./scheduler');
-      await rescheduleAllNotifications();
-      console.log('All notifications rescheduled on app initialization');
-    } catch (scheduleError) {
-      console.error('Error rescheduling notifications on init:', scheduleError);
-      // Don't fail initialization if rescheduling fails
-    }
     
     return true;
   } catch (error) {

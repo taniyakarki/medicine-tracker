@@ -10,10 +10,10 @@ import { snoozeNotification } from "./scheduler";
 
 export const setupNotificationListeners = () => {
   // Handle notification received while app is foregrounded
+  // We don't show notifications in foreground, just log them
   const foregroundSubscription = Notifications.addNotificationReceivedListener(
     (notification) => {
-      console.log("Notification received in foreground:", notification);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      console.log("Notification received in foreground (not shown):", notification);
     }
   );
 
