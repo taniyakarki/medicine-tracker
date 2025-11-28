@@ -29,10 +29,24 @@ export const Colors = {
     
     // Medicine type colors
     pill: '#8B5CF6', // Purple
+    tablet: '#7C3AED', // Violet
+    capsule: '#A78BFA', // Light Purple
     liquid: '#06B6D4', // Cyan
+    syrup: '#0891B2', // Dark Cyan
     injection: '#EF4444', // Red
     inhaler: '#10B981', // Green
     drops: '#3B82F6', // Blue
+    eye_drops: '#60A5FA', // Light Blue
+    ear_drops: '#2563EB', // Dark Blue
+    nasal_spray: '#14B8A6', // Teal
+    cream: '#F59E0B', // Amber
+    ointment: '#D97706', // Dark Amber
+    gel: '#FBBF24', // Light Amber
+    patch: '#EC4899', // Pink
+    suppository: '#8B5CF6', // Purple
+    powder: '#E5E7EB', // Light Gray
+    lozenge: '#F472B6', // Light Pink
+    spray: '#22D3EE', // Light Cyan
     other: '#6B7280', // Gray
     
     // Status colors
@@ -73,10 +87,24 @@ export const Colors = {
     
     // Medicine type colors
     pill: '#A78BFA',
+    tablet: '#8B5CF6',
+    capsule: '#C4B5FD',
     liquid: '#22D3EE',
+    syrup: '#06B6D4',
     injection: '#F87171',
     inhaler: '#34D399',
     drops: '#60A5FA',
+    eye_drops: '#93C5FD',
+    ear_drops: '#3B82F6',
+    nasal_spray: '#2DD4BF',
+    cream: '#FBBF24',
+    ointment: '#F59E0B',
+    gel: '#FCD34D',
+    patch: '#F472B6',
+    suppository: '#A78BFA',
+    powder: '#F3F4F6',
+    lozenge: '#F9A8D4',
+    spray: '#67E8F9',
     other: '#9CA3AF',
     
     // Status colors
@@ -207,14 +235,42 @@ export const getMedicineTypeColor = (type: string, isDark: boolean = false) => {
   switch (type) {
     case 'pill':
       return colors.pill;
+    case 'tablet':
+      return colors.tablet;
+    case 'capsule':
+      return colors.capsule;
     case 'liquid':
       return colors.liquid;
+    case 'syrup':
+      return colors.syrup;
     case 'injection':
       return colors.injection;
     case 'inhaler':
       return colors.inhaler;
     case 'drops':
       return colors.drops;
+    case 'eye_drops':
+      return colors.eye_drops;
+    case 'ear_drops':
+      return colors.ear_drops;
+    case 'nasal_spray':
+      return colors.nasal_spray;
+    case 'cream':
+      return colors.cream;
+    case 'ointment':
+      return colors.ointment;
+    case 'gel':
+      return colors.gel;
+    case 'patch':
+      return colors.patch;
+    case 'suppository':
+      return colors.suppository;
+    case 'powder':
+      return colors.powder;
+    case 'lozenge':
+      return colors.lozenge;
+    case 'spray':
+      return colors.spray;
     default:
       return colors.other;
   }

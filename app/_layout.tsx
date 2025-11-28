@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useColorScheme } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Colors } from "../constants/design";
+import { removeDuplicateDoses } from "../lib/database/models/dose";
 import { initDatabase } from "../lib/database/operations";
 import { registerBackgroundFetchAsync } from "../lib/notifications/background-tasks";
 import { setupNotificationListeners } from "../lib/notifications/handlers";
@@ -27,6 +28,14 @@ export default function RootLayout() {
     try {
       // Initialize database
       await initDatabase();
+
+      // Remove duplicate doses on app start
+      const duplicatesRemoved = await removeDuplicateDoses();
+      if (duplicatesRemoved > 0) {
+        console.log(
+          `Cleaned up ${duplicatesRemoved} duplicate doses on app start`
+        );
+      }
 
       // Initialize notifications
       await initializeNotifications();

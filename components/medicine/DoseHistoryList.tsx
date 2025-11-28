@@ -1,17 +1,15 @@
-import React, { useState } from 'react';
+import { Ionicons } from "@expo/vector-icons";
+import React, { useState } from "react";
 import {
-  View,
-  Text,
   StyleSheet,
+  Text,
   TouchableOpacity,
   useColorScheme,
-  FlatList,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { Colors, Spacing, Typography } from '../../constants/design';
-import { Card } from '../ui/Card';
-import { DoseWithMedicine } from '../../types/medicine';
-import { DoseStatus } from '../../types/medicine';
+  View,
+} from "react-native";
+import { Colors, Spacing, Typography } from "../../constants/design";
+import { DoseStatus, DoseWithMedicine } from "../../types/medicine";
+import { Card } from "../ui/Card";
 
 interface DoseHistoryListProps {
   doses: DoseWithMedicine[];
@@ -21,7 +19,7 @@ interface DoseHistoryListProps {
   showMedicineName?: boolean;
 }
 
-type FilterType = 'all' | 'taken' | 'missed' | 'skipped';
+type FilterType = "all" | "taken" | "missed" | "skipped";
 
 export const DoseHistoryList: React.FC<DoseHistoryListProps> = ({
   doses,
@@ -31,39 +29,39 @@ export const DoseHistoryList: React.FC<DoseHistoryListProps> = ({
   showMedicineName = true,
 }) => {
   const colorScheme = useColorScheme();
-  const colors = colorScheme === 'dark' ? Colors.dark : Colors.light;
-  
-  const [filter, setFilter] = useState<FilterType>('all');
+  const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
+
+  const [filter, setFilter] = useState<FilterType>("all");
 
   const filteredDoses = doses.filter((dose) => {
-    if (filter === 'all') return true;
+    if (filter === "all") return true;
     return dose.status === filter;
   });
 
   const getStatusIcon = (status: DoseStatus) => {
     switch (status) {
-      case 'taken':
-        return 'checkmark-circle';
-      case 'missed':
-        return 'close-circle';
-      case 'skipped':
-        return 'remove-circle';
-      case 'scheduled':
-        return 'time';
+      case "taken":
+        return "checkmark-circle";
+      case "missed":
+        return "close-circle";
+      case "skipped":
+        return "remove-circle";
+      case "scheduled":
+        return "time";
       default:
-        return 'help-circle';
+        return "help-circle";
     }
   };
 
   const getStatusColor = (status: DoseStatus) => {
     switch (status) {
-      case 'taken':
+      case "taken":
         return colors.success;
-      case 'missed':
+      case "missed":
         return colors.error;
-      case 'skipped':
+      case "skipped":
         return colors.warning;
-      case 'scheduled':
+      case "scheduled":
         return colors.primary;
       default:
         return colors.textSecondary;
@@ -82,32 +80,62 @@ export const DoseHistoryList: React.FC<DoseHistoryListProps> = ({
 
     // Check if it's today
     if (date.toDateString() === today.toDateString()) {
-      return 'Today';
+      return "Today";
     }
 
     // Check if it's yesterday
     if (date.toDateString() === yesterday.toDateString()) {
-      return 'Yesterday';
+      return "Yesterday";
     }
 
     // Otherwise return formatted date
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: date.getFullYear() !== today.getFullYear() ? 'numeric' : undefined,
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: date.getFullYear() !== today.getFullYear() ? "numeric" : undefined,
     });
   };
 
   const formatTime = (dateStr: string) => {
     const date = new Date(dateStr);
-    return date.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
+    return date.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
       hour12: true,
     });
   };
 
-  const renderFilterButton = (filterType: FilterType, label: string, count: number) => {
+  const getTimeDifference = (scheduledTime: string, takenTime: string) => {
+    const scheduled = new Date(scheduledTime);
+    const taken = new Date(takenTime);
+    const diffMs = taken.getTime() - scheduled.getTime();
+    const diffMins = Math.round(diffMs / (1000 * 60));
+
+    if (diffMins === 0) {
+      return "on time";
+    } else if (diffMins > 0) {
+      const hours = Math.floor(diffMins / 60);
+      const mins = diffMins % 60;
+      if (hours > 0) {
+        return `${hours}h ${mins}m late`;
+      }
+      return `${diffMins}m late`;
+    } else {
+      const absMins = Math.abs(diffMins);
+      const hours = Math.floor(absMins / 60);
+      const mins = absMins % 60;
+      if (hours > 0) {
+        return `${hours}h ${mins}m early`;
+      }
+      return `${absMins}m early`;
+    }
+  };
+
+  const renderFilterButton = (
+    filterType: FilterType,
+    label: string,
+    count: number
+  ) => {
     const isActive = filter === filterType;
     return (
       <TouchableOpacity
@@ -123,7 +151,7 @@ export const DoseHistoryList: React.FC<DoseHistoryListProps> = ({
         <Text
           style={[
             styles.filterText,
-            { color: isActive ? '#FFFFFF' : colors.text },
+            { color: isActive ? "#FFFFFF" : colors.text },
           ]}
         >
           {label}
@@ -132,14 +160,16 @@ export const DoseHistoryList: React.FC<DoseHistoryListProps> = ({
           style={[
             styles.filterBadge,
             {
-              backgroundColor: isActive ? 'rgba(255,255,255,0.3)' : colors.border,
+              backgroundColor: isActive
+                ? "rgba(255,255,255,0.3)"
+                : colors.border,
             },
           ]}
         >
           <Text
             style={[
               styles.filterBadgeText,
-              { color: isActive ? '#FFFFFF' : colors.textSecondary },
+              { color: isActive ? "#FFFFFF" : colors.textSecondary },
             ]}
           >
             {count}
@@ -156,59 +186,96 @@ export const DoseHistoryList: React.FC<DoseHistoryListProps> = ({
     return (
       <Card style={styles.doseCard}>
         <View style={styles.doseHeader}>
-          <View style={styles.doseHeaderLeft}>
-            <View
-              style={[
-                styles.statusIconContainer,
-                { backgroundColor: `${statusColor}20` },
-              ]}
-            >
-              <Ionicons name={statusIcon} size={24} color={statusColor} />
-            </View>
-            <View style={styles.doseInfo}>
-              {showMedicineName && (
-                <Text style={[styles.medicineName, { color: colors.text }]}>
-                  {item.medicine.name}
-                </Text>
-              )}
-              <Text style={[styles.dosageText, { color: colors.textSecondary }]}>
+          <View
+            style={[
+              styles.statusIconContainer,
+              { backgroundColor: `${statusColor}20` },
+            ]}
+          >
+            <Ionicons name={statusIcon} size={24} color={statusColor} />
+          </View>
+
+          <View style={styles.doseMainInfo}>
+            {showMedicineName && (
+              <Text style={[styles.medicineName, { color: colors.text }]}>
+                {item.medicine.name}
+              </Text>
+            )}
+            <View style={styles.firstRow}>
+              <Text style={[styles.dosageText, { color: colors.text }]}>
                 {item.medicine.dosage} {item.medicine.unit}
               </Text>
+              <Text style={[styles.dateText, { color: colors.textSecondary }]}>
+                {formatDate(item.scheduled_time)}
+              </Text>
             </View>
+            <View style={styles.detailRow}>
+              <Ionicons
+                name="time-outline"
+                size={14}
+                color={colors.textSecondary}
+              />
+              <Text
+                style={[styles.detailText, { color: colors.textSecondary }]}
+              >
+                Scheduled: {formatTime(item.scheduled_time)}
+              </Text>
+            </View>
+            {item.taken_time && (
+              <View style={styles.takenTimeRow}>
+                <View style={styles.detailRow}>
+                  <Ionicons
+                    name="checkmark-circle-outline"
+                    size={14}
+                    color={colors.success}
+                  />
+                  <Text style={[styles.detailText, { color: colors.success }]}>
+                    Taken: {formatTime(item.taken_time)}
+                  </Text>
+                </View>
+                <View
+                  style={[
+                    styles.timeDiffBadge,
+                    {
+                      backgroundColor: `${colors.success}10`,
+                      borderColor: `${colors.success}30`,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[styles.timeDiffText, { color: colors.success }]}
+                  >
+                    {getTimeDifference(item.scheduled_time, item.taken_time)}
+                  </Text>
+                </View>
+              </View>
+            )}
           </View>
-          <View style={styles.statusBadge}>
+
+          <View
+            style={[
+              styles.statusBadge,
+              { backgroundColor: `${statusColor}15` },
+            ]}
+          >
             <Text style={[styles.statusText, { color: statusColor }]}>
               {getStatusLabel(item.status)}
             </Text>
           </View>
         </View>
 
-        <View style={styles.doseDetails}>
-          <View style={styles.detailRow}>
-            <Ionicons name="calendar-outline" size={16} color={colors.textSecondary} />
-            <Text style={[styles.detailText, { color: colors.textSecondary }]}>
-              {formatDate(item.scheduled_time)}
-            </Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Ionicons name="time-outline" size={16} color={colors.textSecondary} />
-            <Text style={[styles.detailText, { color: colors.textSecondary }]}>
-              Scheduled: {formatTime(item.scheduled_time)}
-            </Text>
-          </View>
-          {item.taken_time && (
-            <View style={styles.detailRow}>
-              <Ionicons name="checkmark-outline" size={16} color={colors.success} />
-              <Text style={[styles.detailText, { color: colors.textSecondary }]}>
-                Taken: {formatTime(item.taken_time)}
-              </Text>
-            </View>
-          )}
-        </View>
-
         {item.notes && (
-          <View style={[styles.notesContainer, { backgroundColor: colors.cardSecondary }]}>
-            <Ionicons name="document-text-outline" size={16} color={colors.textSecondary} />
+          <View
+            style={[
+              styles.notesContainer,
+              { backgroundColor: colors.cardSecondary },
+            ]}
+          >
+            <Ionicons
+              name="document-text-outline"
+              size={16}
+              color={colors.textSecondary}
+            />
             <Text style={[styles.notesText, { color: colors.textSecondary }]}>
               {item.notes}
             </Text>
@@ -220,14 +287,18 @@ export const DoseHistoryList: React.FC<DoseHistoryListProps> = ({
 
   const renderEmpty = () => (
     <Card style={styles.emptyCard}>
-      <Ionicons name="calendar-outline" size={48} color={colors.textSecondary} />
+      <Ionicons
+        name="calendar-outline"
+        size={48}
+        color={colors.textSecondary}
+      />
       <Text style={[styles.emptyText, { color: colors.text }]}>
-        No {filter !== 'all' ? filter : ''} doses found
+        No {filter !== "all" ? filter : ""} doses found
       </Text>
       <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
-        {filter !== 'all'
+        {filter !== "all"
           ? `Try changing the filter to see other doses`
-          : 'Dose history will appear here once you start tracking'}
+          : "Dose history will appear here once you start tracking"}
       </Text>
     </Card>
   );
@@ -239,10 +310,13 @@ export const DoseHistoryList: React.FC<DoseHistoryListProps> = ({
       <TouchableOpacity
         onPress={onLoadMore}
         disabled={loading}
-        style={[styles.loadMoreButton, { backgroundColor: colors.cardSecondary }]}
+        style={[
+          styles.loadMoreButton,
+          { backgroundColor: colors.cardSecondary },
+        ]}
       >
         <Text style={[styles.loadMoreText, { color: colors.primary }]}>
-          {loading ? 'Loading...' : 'Load More'}
+          {loading ? "Loading..." : "Load More"}
         </Text>
       </TouchableOpacity>
     );
@@ -250,31 +324,34 @@ export const DoseHistoryList: React.FC<DoseHistoryListProps> = ({
 
   const stats = {
     all: doses.length,
-    taken: doses.filter((d) => d.status === 'taken').length,
-    missed: doses.filter((d) => d.status === 'missed').length,
-    skipped: doses.filter((d) => d.status === 'skipped').length,
+    taken: doses.filter((d) => d.status === "taken").length,
+    missed: doses.filter((d) => d.status === "missed").length,
+    skipped: doses.filter((d) => d.status === "skipped").length,
   };
 
   return (
     <View style={styles.container}>
       {/* Filter Buttons */}
       <View style={styles.filterContainer}>
-        {renderFilterButton('all', 'All', stats.all)}
-        {renderFilterButton('taken', 'Taken', stats.taken)}
-        {renderFilterButton('missed', 'Missed', stats.missed)}
-        {renderFilterButton('skipped', 'Skipped', stats.skipped)}
+        {renderFilterButton("all", "All", stats.all)}
+        {renderFilterButton("taken", "Taken", stats.taken)}
+        {renderFilterButton("missed", "Missed", stats.missed)}
+        {renderFilterButton("skipped", "Skipped", stats.skipped)}
       </View>
 
       {/* Dose List */}
-      <FlatList
-        data={filteredDoses}
-        renderItem={renderDoseItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        ListEmptyComponent={renderEmpty}
-        ListFooterComponent={renderFooter}
-        showsVerticalScrollIndicator={false}
-      />
+      <View style={styles.listContent}>
+        {filteredDoses.length === 0 ? (
+          renderEmpty()
+        ) : (
+          <>
+            {filteredDoses.map((item) => (
+              <View key={item.id}>{renderDoseItem({ item })}</View>
+            ))}
+            {renderFooter()}
+          </>
+        )}
+      </View>
     </View>
   );
 };
@@ -284,14 +361,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   filterContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Spacing.sm,
     marginBottom: Spacing.md,
-    flexWrap: 'wrap',
+    flexWrap: "wrap",
   },
   filterButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderRadius: 20,
@@ -307,75 +384,99 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 10,
     minWidth: 24,
-    alignItems: 'center',
+    alignItems: "center",
   },
   filterBadgeText: {
     fontSize: Typography.fontSize.xs,
     fontWeight: Typography.fontWeight.semibold,
   },
   listContent: {
-    gap: Spacing.md,
+    gap: Spacing.sm,
   },
   doseCard: {
     padding: Spacing.md,
-    gap: Spacing.md,
   },
   doseHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  doseHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    flex: 1,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: Spacing.sm,
   },
   statusIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  doseInfo: {
+  doseMainInfo: {
     flex: 1,
-    gap: Spacing.xs,
+    gap: 4,
   },
   medicineName: {
     fontSize: Typography.fontSize.base,
     fontWeight: Typography.fontWeight.semibold,
+    marginBottom: 2,
+  },
+  firstRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingLeft: 2,
   },
   dosageText: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  separator: {
+    fontSize: Typography.fontSize.sm,
+    color: "#999",
+  },
+  dateText: {
     fontSize: Typography.fontSize.sm,
   },
-  statusBadge: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-  },
-  statusText: {
-    fontSize: Typography.fontSize.xs,
-    fontWeight: Typography.fontWeight.semibold,
-    textTransform: 'uppercase',
-  },
-  doseDetails: {
-    gap: Spacing.xs,
-    paddingLeft: 48 + Spacing.md,
-  },
   detailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
   detailText: {
     fontSize: Typography.fontSize.sm,
   },
+  takenTimeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: Spacing.sm,
+  },
+  timeDiffBadge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  timeDiffText: {
+    fontSize: Typography.fontSize.xs,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  statusBadge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 6,
+    borderRadius: 12,
+    alignSelf: "flex-start",
+  },
+  statusText: {
+    fontSize: Typography.fontSize.xs,
+    fontWeight: Typography.fontWeight.bold,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
   notesContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Spacing.sm,
     padding: Spacing.sm,
     borderRadius: 8,
-    marginTop: Spacing.xs,
+    marginTop: Spacing.sm,
+    alignItems: "flex-start",
   },
   notesText: {
     flex: 1,
@@ -383,23 +484,23 @@ const styles = StyleSheet.create({
     lineHeight: Typography.lineHeight.relaxed * Typography.fontSize.sm,
   },
   emptyCard: {
-    alignItems: 'center',
+    alignItems: "center",
     padding: Spacing.xl * 2,
     gap: Spacing.md,
   },
   emptyText: {
     fontSize: Typography.fontSize.lg,
     fontWeight: Typography.fontWeight.semibold,
-    textAlign: 'center',
+    textAlign: "center",
   },
   emptySubtext: {
     fontSize: Typography.fontSize.sm,
-    textAlign: 'center',
+    textAlign: "center",
   },
   loadMoreButton: {
     padding: Spacing.md,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: Spacing.md,
   },
   loadMoreText: {
@@ -407,4 +508,3 @@ const styles = StyleSheet.create({
     fontWeight: Typography.fontWeight.medium,
   },
 });
-

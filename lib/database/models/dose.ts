@@ -37,7 +37,19 @@ export const getDosesByMedicineId = async (
   medicineId: string,
   limit?: number
 ): Promise<Dose[]> => {
-  let query = `SELECT * FROM ${TABLE_NAME} WHERE medicine_id = ? ORDER BY scheduled_time DESC`;
+  // Use a subquery to get unique doses by medicine_id and scheduled_time
+  // This prevents duplicates while allowing multiple schedules per medicine
+  let query = `
+    SELECT d.*
+    FROM ${TABLE_NAME} d
+    INNER JOIN (
+      SELECT medicine_id, scheduled_time, MIN(id) as min_id
+      FROM ${TABLE_NAME}
+      WHERE medicine_id = ?
+      GROUP BY medicine_id, scheduled_time
+    ) unique_doses
+    ON d.id = unique_doses.min_id
+    ORDER BY d.scheduled_time DESC`;
   if (limit) {
     query += ` LIMIT ${limit}`;
   }
@@ -78,6 +90,8 @@ export const getUpcomingDoses = async (
        AND d.scheduled_time <= ?
        AND d.status = 'scheduled'
        AND m.is_active = 1
+     GROUP BY d.medicine_id, d.scheduled_time
+     HAVING d.id = MIN(d.id)
      ORDER BY d.scheduled_time ASC`,
     [userId, now, future]
   ).then((doses) =>
@@ -113,6 +127,8 @@ export const getTodayDoses = async (
        AND d.scheduled_time >= ? 
        AND d.scheduled_time <= ?
        AND m.is_active = 1
+     GROUP BY d.medicine_id, d.scheduled_time
+     HAVING d.id = MIN(d.id)
      ORDER BY d.scheduled_time ASC`,
     [userId, startOfDay.toISOString(), endOfDay.toISOString()]
   ).then((doses) =>
@@ -144,6 +160,8 @@ export const getDosesInDateRange = async (
      WHERE m.user_id = ? 
        AND d.scheduled_time >= ? 
        AND d.scheduled_time <= ?
+     GROUP BY d.medicine_id, d.scheduled_time
+     HAVING d.id = MIN(d.id)
        AND m.is_active = 1
      ORDER BY d.scheduled_time DESC`,
     [userId, startDate, endDate]
@@ -206,14 +224,20 @@ export const getDoseStats = async (
   }>(
     `SELECT 
       COUNT(*) as total,
-      SUM(CASE WHEN d.status = 'taken' THEN 1 ELSE 0 END) as taken,
-      SUM(CASE WHEN d.status = 'missed' THEN 1 ELSE 0 END) as missed,
-      SUM(CASE WHEN d.status = 'skipped' THEN 1 ELSE 0 END) as skipped
-     FROM ${TABLE_NAME} d
-     JOIN medicines m ON d.medicine_id = m.id
-     WHERE m.user_id = ? 
-       AND d.scheduled_time >= ? 
-       AND d.scheduled_time <= ?`,
+      SUM(CASE WHEN status = 'taken' THEN 1 ELSE 0 END) as taken,
+      SUM(CASE WHEN status = 'missed' THEN 1 ELSE 0 END) as missed,
+      SUM(CASE WHEN status = 'skipped' THEN 1 ELSE 0 END) as skipped
+     FROM (
+       SELECT d.status, d.medicine_id, d.scheduled_time
+       FROM ${TABLE_NAME} d
+       JOIN medicines m ON d.medicine_id = m.id
+       WHERE m.user_id = ? 
+         AND d.scheduled_time >= ? 
+         AND d.scheduled_time <= ?
+         AND m.is_active = 1
+       GROUP BY d.medicine_id, d.scheduled_time
+       HAVING d.id = MIN(d.id)
+     ) as unique_doses`,
     [userId, startDate, endDate]
   );
 
@@ -291,6 +315,8 @@ export const getPastPendingDoses = async (
        AND d.scheduled_time < ?
        AND (d.status = 'scheduled' OR d.status = 'missed')
        AND m.is_active = 1
+     GROUP BY d.medicine_id, d.scheduled_time
+     HAVING d.id = MIN(d.id)
      ORDER BY d.scheduled_time DESC`,
     [userId, past, now]
   ).then((doses) =>
@@ -299,4 +325,22 @@ export const getPastPendingDoses = async (
       medicine: JSON.parse(d.medicine as any),
     }))
   );
+};
+
+/**
+ * Remove duplicate doses that have the same medicine_id and scheduled_time
+ * Keeps the oldest dose (MIN id) and deletes the rest
+ */
+export const removeDuplicateDoses = async (): Promise<number> => {
+  const result = await executeQuery(
+    `DELETE FROM ${TABLE_NAME}
+     WHERE id NOT IN (
+       SELECT MIN(id)
+       FROM ${TABLE_NAME}
+       GROUP BY medicine_id, scheduled_time
+     )`
+  );
+
+  // Return the number of deleted rows
+  return result.changes || 0;
 };

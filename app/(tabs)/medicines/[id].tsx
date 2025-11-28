@@ -3,22 +3,22 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
   useColorScheme,
   View,
-  Image,
 } from "react-native";
-import { MedicineTypeIcon } from "../../../components/medicine/MedicineTypeIcon";
 import { DoseHistoryList } from "../../../components/medicine/DoseHistoryList";
+import { MedicineTypeIcon } from "../../../components/medicine/MedicineTypeIcon";
 import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
 import { LoadingSpinner } from "../../../components/ui/LoadingSpinner";
 import { Colors, Spacing, Typography } from "../../../constants/design";
+import { getDosesByMedicineId } from "../../../lib/database/models/dose";
 import { deleteMedicine } from "../../../lib/database/models/medicine";
 import { getSchedulesByMedicineId } from "../../../lib/database/models/schedule";
-import { getDosesByMedicineId } from "../../../lib/database/models/dose";
 import { useMedicine } from "../../../lib/hooks/useMedicines";
 import { Schedule } from "../../../types/database";
 import { DoseWithMedicine } from "../../../types/medicine";
@@ -29,16 +29,17 @@ export default function MedicineDetailScreen() {
   const colorScheme = useColorScheme();
   const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
   const { medicine, loading } = useMedicine(id);
-  
+
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [doses, setDoses] = useState<DoseWithMedicine[]>([]);
   const [loadingSchedules, setLoadingSchedules] = useState(true);
-  const [showHistory, setShowHistory] = useState(false);
+  const [showHistory, setShowHistory] = useState(true);
 
   useEffect(() => {
     if (id) {
       loadSchedulesAndDoses();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const loadSchedulesAndDoses = async () => {
@@ -46,21 +47,36 @@ export default function MedicineDetailScreen() {
       setLoadingSchedules(true);
       const [schedulesData, dosesData] = await Promise.all([
         getSchedulesByMedicineId(id),
-        getDosesByMedicineId(id, 50), // Load last 50 doses
+        getDosesByMedicineId(id, 100), // Load last 100 doses
       ]);
       setSchedules(schedulesData);
-      
-      // Transform doses to include medicine info
-      const dosesWithMedicine = dosesData.map((dose) => ({
-        ...dose,
-        medicine: medicine || {
-          id: id,
-          name: '',
-          type: 'pill' as const,
-          dosage: '',
-          unit: '',
-        },
-      }));
+
+      console.log(`Loaded ${dosesData.length} doses for medicine ${id}`);
+
+      // Get end of today (23:59:59)
+      const endOfToday = new Date();
+      endOfToday.setHours(23, 59, 59, 999);
+
+      // Transform doses to include medicine info and filter to only past and today
+      const dosesWithMedicine = dosesData
+        .map((dose) => ({
+          ...dose,
+          medicine: medicine || {
+            id: id,
+            name: "",
+            type: "pill" as const,
+            dosage: "",
+            unit: "",
+          },
+        }))
+        .filter((dose) => {
+          const scheduledTime = new Date(dose.scheduled_time);
+          return scheduledTime <= endOfToday;
+        });
+
+      console.log(
+        `Filtered to ${dosesWithMedicine.length} doses (past and today)`
+      );
       setDoses(dosesWithMedicine);
     } catch (error) {
       console.error("Error loading schedules and doses:", error);
@@ -99,10 +115,22 @@ export default function MedicineDetailScreen() {
     if (!daysJson) return null;
     try {
       const days = JSON.parse(daysJson);
-      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-      return days.map((d: number) => dayNames[d]).join(', ');
+      const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      return days.map((d: number) => dayNames[d]).join(", ");
     } catch {
       return null;
+    }
+  };
+
+  const formatTimeWithAMPM = (time: string) => {
+    try {
+      const [hours, minutes] = time.split(":");
+      const hour = parseInt(hours, 10);
+      const ampm = hour >= 12 ? "PM" : "AM";
+      const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+      return `${displayHour}:${minutes} ${ampm}`;
+    } catch {
+      return time;
     }
   };
 
@@ -119,7 +147,10 @@ export default function MedicineDetailScreen() {
         {/* Medicine Image */}
         {medicine.image && (
           <Card style={styles.imageCard}>
-            <Image source={{ uri: medicine.image }} style={styles.medicineImage} />
+            <Image
+              source={{ uri: medicine.image }}
+              style={styles.medicineImage}
+            />
           </Card>
         )}
 
@@ -133,7 +164,11 @@ export default function MedicineDetailScreen() {
                     { backgroundColor: medicine.color },
                   ]}
                 >
-                  <MedicineTypeIcon type={medicine.type} size={24} color="#FFFFFF" />
+                  <MedicineTypeIcon
+                    type={medicine.type}
+                    size={24}
+                    color="#FFFFFF"
+                  />
                 </View>
               ) : (
                 <MedicineTypeIcon type={medicine.type} size={32} />
@@ -216,21 +251,39 @@ export default function MedicineDetailScreen() {
                 <View style={styles.scheduleRow}>
                   <Ionicons name="time" size={20} color={colors.primary} />
                   <Text style={[styles.scheduleTime, { color: colors.text }]}>
-                    {schedule.time}
+                    {formatTimeWithAMPM(schedule.time)}
                   </Text>
                 </View>
                 {schedule.days_of_week && (
                   <View style={styles.scheduleRow}>
-                    <Ionicons name="calendar" size={20} color={colors.textSecondary} />
-                    <Text style={[styles.scheduleDetail, { color: colors.textSecondary }]}>
+                    <Ionicons
+                      name="calendar"
+                      size={20}
+                      color={colors.textSecondary}
+                    />
+                    <Text
+                      style={[
+                        styles.scheduleDetail,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
                       {formatDaysOfWeek(schedule.days_of_week)}
                     </Text>
                   </View>
                 )}
                 {schedule.interval_hours && (
                   <View style={styles.scheduleRow}>
-                    <Ionicons name="repeat" size={20} color={colors.textSecondary} />
-                    <Text style={[styles.scheduleDetail, { color: colors.textSecondary }]}>
+                    <Ionicons
+                      name="repeat"
+                      size={20}
+                      color={colors.textSecondary}
+                    />
+                    <Text
+                      style={[
+                        styles.scheduleDetail,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
                       Every {schedule.interval_hours} hours
                     </Text>
                   </View>
@@ -255,26 +308,163 @@ export default function MedicineDetailScreen() {
           </Card>
         )}
 
+        {/* Dose Statistics */}
+        {doses.length > 0 && (
+          <Card style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Statistics
+            </Text>
+            <View style={styles.statsGrid}>
+              <View style={styles.statItem}>
+                <View
+                  style={[
+                    styles.statIconContainer,
+                    { backgroundColor: `${colors.primary}20` },
+                  ]}
+                >
+                  <Ionicons name="list" size={24} color={colors.primary} />
+                </View>
+                <Text style={[styles.statValue, { color: colors.text }]}>
+                  {doses.length}
+                </Text>
+                <Text
+                  style={[styles.statLabel, { color: colors.textSecondary }]}
+                >
+                  Total Doses
+                </Text>
+              </View>
+              <View style={styles.statItem}>
+                <View
+                  style={[
+                    styles.statIconContainer,
+                    { backgroundColor: `${colors.success}20` },
+                  ]}
+                >
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={24}
+                    color={colors.success}
+                  />
+                </View>
+                <Text style={[styles.statValue, { color: colors.text }]}>
+                  {doses.filter((d) => d.status === "taken").length}
+                </Text>
+                <Text
+                  style={[styles.statLabel, { color: colors.textSecondary }]}
+                >
+                  Taken
+                </Text>
+              </View>
+              <View style={styles.statItem}>
+                <View
+                  style={[
+                    styles.statIconContainer,
+                    { backgroundColor: `${colors.error}20` },
+                  ]}
+                >
+                  <Ionicons
+                    name="close-circle"
+                    size={24}
+                    color={colors.error}
+                  />
+                </View>
+                <Text style={[styles.statValue, { color: colors.text }]}>
+                  {doses.filter((d) => d.status === "missed").length}
+                </Text>
+                <Text
+                  style={[styles.statLabel, { color: colors.textSecondary }]}
+                >
+                  Missed
+                </Text>
+              </View>
+              <View style={styles.statItem}>
+                <View
+                  style={[
+                    styles.statIconContainer,
+                    { backgroundColor: `${colors.warning}20` },
+                  ]}
+                >
+                  <Ionicons
+                    name="remove-circle"
+                    size={24}
+                    color={colors.warning}
+                  />
+                </View>
+                <Text style={[styles.statValue, { color: colors.text }]}>
+                  {doses.filter((d) => d.status === "skipped").length}
+                </Text>
+                <Text
+                  style={[styles.statLabel, { color: colors.textSecondary }]}
+                >
+                  Skipped
+                </Text>
+              </View>
+            </View>
+            {doses.filter((d) => d.status === "taken").length > 0 && (
+              <View style={styles.adherenceContainer}>
+                <Text
+                  style={[
+                    styles.adherenceLabel,
+                    { color: colors.textSecondary },
+                  ]}
+                >
+                  Adherence Rate
+                </Text>
+                <Text
+                  style={[styles.adherenceValue, { color: colors.success }]}
+                >
+                  {(
+                    (doses.filter((d) => d.status === "taken").length /
+                      doses.length) *
+                    100
+                  ).toFixed(1)}
+                  %
+                </Text>
+              </View>
+            )}
+          </Card>
+        )}
+
         {/* Dose History */}
         <Card style={styles.section}>
           <View style={styles.historyHeader}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
               Dose History
             </Text>
-            <Button
-              title={showHistory ? "Hide" : "Show"}
-              onPress={() => setShowHistory(!showHistory)}
-              variant="ghost"
-              style={styles.toggleButton}
-            />
-          </View>
-          {showHistory && (
-            <View style={styles.historyContainer}>
-              <DoseHistoryList
-                doses={doses}
-                showMedicineName={false}
+            {doses.length > 0 && (
+              <Button
+                title={showHistory ? "Hide" : "Show"}
+                onPress={() => setShowHistory(!showHistory)}
+                variant="ghost"
+                style={styles.toggleButton}
               />
+            )}
+          </View>
+          {doses.length === 0 ? (
+            <View style={styles.emptyHistoryContainer}>
+              <Ionicons
+                name="calendar-outline"
+                size={48}
+                color={colors.textSecondary}
+              />
+              <Text style={[styles.emptyHistoryText, { color: colors.text }]}>
+                No dose history yet
+              </Text>
+              <Text
+                style={[
+                  styles.emptyHistorySubtext,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                Doses will appear here once they are scheduled and taken
+              </Text>
             </View>
+          ) : (
+            showHistory && (
+              <View style={styles.historyContainer}>
+                <DoseHistoryList doses={doses} showMedicineName={false} />
+              </View>
+            )
           )}
         </Card>
 
@@ -309,13 +499,13 @@ const styles = StyleSheet.create({
   },
   imageCard: {
     padding: 0,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginBottom: Spacing.md,
   },
   medicineImage: {
-    width: '100%',
+    width: "100%",
     height: 200,
-    resizeMode: 'cover',
+    resizeMode: "cover",
   },
   headerCard: {
     marginBottom: Spacing.md,
@@ -331,8 +521,8 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   headerText: {
     flex: 1,
@@ -373,8 +563,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   scheduleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Spacing.sm,
   },
   scheduleTime: {
@@ -386,16 +576,59 @@ const styles = StyleSheet.create({
   },
   noSchedule: {
     fontSize: Typography.fontSize.base,
-    fontStyle: 'italic',
+    fontStyle: "italic",
   },
   notes: {
     fontSize: Typography.fontSize.base,
     lineHeight: Typography.lineHeight.relaxed * Typography.fontSize.base,
   },
+  statsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.md,
+  },
+  statItem: {
+    flex: 1,
+    minWidth: "45%",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  statIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  statValue: {
+    fontSize: Typography.fontSize["2xl"],
+    fontWeight: Typography.fontWeight.bold,
+  },
+  statLabel: {
+    fontSize: Typography.fontSize.sm,
+    textAlign: "center",
+  },
+  adherenceContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: Spacing.md,
+    paddingTop: Spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(0,0,0,0.1)",
+  },
+  adherenceLabel: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  adherenceValue: {
+    fontSize: Typography.fontSize.xl,
+    fontWeight: Typography.fontWeight.bold,
+  },
   historyHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: Spacing.sm,
   },
   toggleButton: {
@@ -404,6 +637,20 @@ const styles = StyleSheet.create({
   },
   historyContainer: {
     minHeight: 200,
+  },
+  emptyHistoryContainer: {
+    alignItems: "center",
+    padding: Spacing.xl,
+    gap: Spacing.md,
+  },
+  emptyHistoryText: {
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.semibold,
+    textAlign: "center",
+  },
+  emptyHistorySubtext: {
+    fontSize: Typography.fontSize.sm,
+    textAlign: "center",
   },
   actions: {
     gap: Spacing.md,

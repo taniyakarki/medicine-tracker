@@ -1,9 +1,9 @@
 export const formatTime = (time: string): string => {
   // time is in HH:mm format
-  const [hours, minutes] = time.split(':').map(Number);
-  const period = hours >= 12 ? 'PM' : 'AM';
+  const [hours, minutes] = time.split(":").map(Number);
+  const period = hours >= 12 ? "PM" : "AM";
   const displayHours = hours % 12 || 12;
-  return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+  return `${displayHours}:${minutes.toString().padStart(2, "0")} ${period}`;
 };
 
 export const formatDate = (dateString: string): string => {
@@ -11,23 +11,25 @@ export const formatDate = (dateString: string): string => {
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
-  
+
   if (isSameDay(date, today)) {
-    return 'Today';
+    return "Today";
   } else if (isSameDay(date, yesterday)) {
-    return 'Yesterday';
+    return "Yesterday";
   } else {
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric',
-      year: date.getFullYear() !== today.getFullYear() ? 'numeric' : undefined
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: date.getFullYear() !== today.getFullYear() ? "numeric" : undefined,
     });
   }
 };
 
 export const formatDateTime = (dateString: string): string => {
   const date = new Date(dateString);
-  return `${formatDate(dateString)} at ${formatTime(date.toTimeString().slice(0, 5))}`;
+  return `${formatDate(dateString)} at ${formatTime(
+    date.toTimeString().slice(0, 5)
+  )}`;
 };
 
 export const isSameDay = (date1: Date, date2: Date): boolean => {
@@ -73,12 +75,20 @@ export const getDayOfWeek = (date: Date): number => {
 };
 
 export const getDayName = (dayNumber: number): string => {
-  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const days = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
   return days[dayNumber];
 };
 
 export const getShortDayName = (dayNumber: number): string => {
-  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   return days[dayNumber];
 };
 
@@ -97,23 +107,46 @@ export const addMinutes = (date: Date, minutes: number): Date => {
 export const getTimeUntil = (targetDate: Date): string => {
   const now = new Date();
   const diff = targetDate.getTime() - now.getTime();
-  
+
   if (diff < 0) {
-    return 'Overdue';
+    return "Overdue";
   }
-  
+
   const minutes = Math.floor(diff / 60000);
   const hours = Math.floor(minutes / 60);
   const days = Math.floor(hours / 24);
-  
+
   if (days > 0) {
-    return `in ${days} day${days > 1 ? 's' : ''}`;
+    return `in ${days} day${days > 1 ? "s" : ""}`;
   } else if (hours > 0) {
-    return `in ${hours} hour${hours > 1 ? 's' : ''}`;
+    return `in ${hours} hour${hours > 1 ? "s" : ""}`;
   } else if (minutes > 0) {
-    return `in ${minutes} min${minutes > 1 ? 's' : ''}`;
+    return `in ${minutes} min${minutes > 1 ? "s" : ""}`;
   } else {
-    return 'now';
+    return "now";
+  }
+};
+
+export const getTimeAgo = (targetDate: Date): string => {
+  const now = new Date();
+  const diff = now.getTime() - targetDate.getTime();
+
+  if (diff < 0) {
+    return "in the future";
+  }
+
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (days > 0) {
+    return `${days} day${days > 1 ? "s" : ""} ago`;
+  } else if (hours > 0) {
+    return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+  } else if (minutes > 0) {
+    return `${minutes} min${minutes > 1 ? "s" : ""} ago`;
+  } else {
+    return "just now";
   }
 };
 
@@ -121,7 +154,10 @@ export const isOverdue = (scheduledTime: string): boolean => {
   return new Date(scheduledTime) < new Date();
 };
 
-export const isUpcomingSoon = (scheduledTime: string, minutesThreshold: number = 30): boolean => {
+export const isUpcomingSoon = (
+  scheduledTime: string,
+  minutesThreshold: number = 30
+): boolean => {
   const scheduled = new Date(scheduledTime);
   const now = new Date();
   const diff = scheduled.getTime() - now.getTime();
@@ -129,40 +165,43 @@ export const isUpcomingSoon = (scheduledTime: string, minutesThreshold: number =
 };
 
 export const combineDateAndTime = (date: Date, time: string): Date => {
-  const [hours, minutes] = time.split(':').map(Number);
+  const [hours, minutes] = time.split(":").map(Number);
   const result = new Date(date);
   result.setHours(hours, minutes, 0, 0);
   return result;
 };
 
-export const getNextOccurrence = (time: string, daysOfWeek?: number[]): Date => {
+export const getNextOccurrence = (
+  time: string,
+  daysOfWeek?: number[]
+): Date => {
   const now = new Date();
-  const [hours, minutes] = time.split(':').map(Number);
-  
+  const [hours, minutes] = time.split(":").map(Number);
+
   if (!daysOfWeek || daysOfWeek.length === 0) {
     // Daily - find next occurrence today or tomorrow
     const next = new Date(now);
     next.setHours(hours, minutes, 0, 0);
-    
+
     if (next <= now) {
       next.setDate(next.getDate() + 1);
     }
-    
+
     return next;
   }
-  
+
   // Specific days - find next matching day
   const currentDay = now.getDay();
   let daysToAdd = 0;
   let found = false;
-  
+
   for (let i = 0; i < 7; i++) {
     const checkDay = (currentDay + i) % 7;
     if (daysOfWeek.includes(checkDay)) {
       const checkDate = new Date(now);
       checkDate.setDate(checkDate.getDate() + i);
       checkDate.setHours(hours, minutes, 0, 0);
-      
+
       if (checkDate > now) {
         daysToAdd = i;
         found = true;
@@ -170,17 +209,16 @@ export const getNextOccurrence = (time: string, daysOfWeek?: number[]): Date => 
       }
     }
   }
-  
+
   if (!found) {
     // If no future occurrence this week, find first day next week
     const firstDay = Math.min(...daysOfWeek);
     daysToAdd = (7 - currentDay + firstDay) % 7 || 7;
   }
-  
+
   const next = new Date(now);
   next.setDate(next.getDate() + daysToAdd);
   next.setHours(hours, minutes, 0, 0);
-  
+
   return next;
 };
-

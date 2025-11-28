@@ -22,6 +22,7 @@ import { Input } from "../../../../components/ui/Input";
 import { LoadingSpinner } from "../../../../components/ui/LoadingSpinner";
 import { Select, SelectOption } from "../../../../components/ui/Select";
 import { Colors, Spacing } from "../../../../constants/design";
+import { MEDICINE_TYPES } from "../../../../constants/medicine-types";
 import {
   getMedicineById,
   updateMedicine,
@@ -32,15 +33,6 @@ import {
   getSchedulesByMedicineId,
 } from "../../../../lib/database/models/schedule";
 import { validateMedicineForm } from "../../../../lib/utils/validation";
-
-const medicineTypes: SelectOption[] = [
-  { label: "Pill", value: "pill" },
-  { label: "Liquid", value: "liquid" },
-  { label: "Injection", value: "injection" },
-  { label: "Inhaler", value: "inhaler" },
-  { label: "Drops", value: "drops" },
-  { label: "Other", value: "other" },
-];
 
 const frequencies: SelectOption[] = [
   { label: "Daily", value: "daily" },
@@ -282,13 +274,14 @@ export default function EditMedicineScreen() {
             <Select
               label="Medicine Type"
               value={formData.type}
-              options={medicineTypes}
+              options={MEDICINE_TYPES}
               onSelect={(value) => {
                 setFormData({ ...formData, type: value });
                 setErrors({ ...errors, type: "" });
               }}
               error={errors.type}
               required
+              showIcons
             />
 
             <View style={styles.row}>

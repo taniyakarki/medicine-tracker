@@ -1,7 +1,7 @@
 import * as SQLite from "expo-sqlite";
 
 export const DATABASE_NAME = "medicine_tracker.db";
-export const DATABASE_VERSION = 1;
+export const DATABASE_VERSION = 2;
 
 export const createTables = async (db: SQLite.SQLiteDatabase) => {
   await db.execAsync(`
@@ -24,7 +24,7 @@ export const createTables = async (db: SQLite.SQLiteDatabase) => {
       id TEXT PRIMARY KEY NOT NULL,
       user_id TEXT NOT NULL,
       name TEXT NOT NULL,
-      type TEXT NOT NULL CHECK(type IN ('pill', 'liquid', 'injection', 'inhaler', 'drops', 'other')),
+      type TEXT NOT NULL CHECK(type IN ('pill', 'tablet', 'capsule', 'liquid', 'syrup', 'injection', 'inhaler', 'drops', 'eye_drops', 'ear_drops', 'nasal_spray', 'cream', 'ointment', 'gel', 'patch', 'suppository', 'powder', 'lozenge', 'spray', 'other')),
       dosage TEXT NOT NULL,
       unit TEXT NOT NULL,
       frequency TEXT NOT NULL CHECK(frequency IN ('daily', 'specific_days', 'interval')),
@@ -158,17 +158,79 @@ export interface Migration {
 }
 
 export const migrations: Migration[] = [
-  // Future migrations will be added here
-  // Example:
-  // {
-  //   version: 2,
-  //   up: async (db) => {
-  //     await db.execAsync('ALTER TABLE medicines ADD COLUMN new_field TEXT;');
-  //   },
-  //   down: async (db) => {
-  //     // Rollback logic
-  //   }
-  // }
+  {
+    version: 2,
+    up: async (db) => {
+      // SQLite doesn't support modifying CHECK constraints directly
+      // We need to recreate the table with the new constraint
+      await db.execAsync(`
+        -- Create new medicines table with updated type constraint
+        CREATE TABLE IF NOT EXISTS medicines_new (
+          id TEXT PRIMARY KEY NOT NULL,
+          user_id TEXT NOT NULL,
+          name TEXT NOT NULL,
+          type TEXT NOT NULL CHECK(type IN ('pill', 'tablet', 'capsule', 'liquid', 'syrup', 'injection', 'inhaler', 'drops', 'eye_drops', 'ear_drops', 'nasal_spray', 'cream', 'ointment', 'gel', 'patch', 'suppository', 'powder', 'lozenge', 'spray', 'other')),
+          dosage TEXT NOT NULL,
+          unit TEXT NOT NULL,
+          frequency TEXT NOT NULL CHECK(frequency IN ('daily', 'specific_days', 'interval')),
+          start_date TEXT NOT NULL,
+          end_date TEXT,
+          notes TEXT,
+          image TEXT,
+          color TEXT,
+          is_active INTEGER NOT NULL DEFAULT 1,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+          sync_flag INTEGER NOT NULL DEFAULT 0,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+
+        -- Copy data from old table to new table
+        INSERT INTO medicines_new SELECT * FROM medicines;
+
+        -- Drop old table
+        DROP TABLE medicines;
+
+        -- Rename new table to original name
+        ALTER TABLE medicines_new RENAME TO medicines;
+
+        -- Recreate indexes
+        CREATE INDEX IF NOT EXISTS idx_medicines_user_id ON medicines(user_id);
+        CREATE INDEX IF NOT EXISTS idx_medicines_is_active ON medicines(is_active);
+      `);
+    },
+    down: async (db) => {
+      // Rollback to original constraint
+      await db.execAsync(`
+        CREATE TABLE IF NOT EXISTS medicines_new (
+          id TEXT PRIMARY KEY NOT NULL,
+          user_id TEXT NOT NULL,
+          name TEXT NOT NULL,
+          type TEXT NOT NULL CHECK(type IN ('pill', 'liquid', 'injection', 'inhaler', 'drops', 'other')),
+          dosage TEXT NOT NULL,
+          unit TEXT NOT NULL,
+          frequency TEXT NOT NULL CHECK(frequency IN ('daily', 'specific_days', 'interval')),
+          start_date TEXT NOT NULL,
+          end_date TEXT,
+          notes TEXT,
+          image TEXT,
+          color TEXT,
+          is_active INTEGER NOT NULL DEFAULT 1,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+          sync_flag INTEGER NOT NULL DEFAULT 0,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+
+        INSERT INTO medicines_new SELECT * FROM medicines;
+        DROP TABLE medicines;
+        ALTER TABLE medicines_new RENAME TO medicines;
+
+        CREATE INDEX IF NOT EXISTS idx_medicines_user_id ON medicines(user_id);
+        CREATE INDEX IF NOT EXISTS idx_medicines_is_active ON medicines(is_active);
+      `);
+    }
+  }
 ];
 
 export const getCurrentVersion = async (

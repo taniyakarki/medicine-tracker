@@ -21,19 +21,11 @@ import { DatePicker } from "../../../components/ui/DatePicker";
 import { Input } from "../../../components/ui/Input";
 import { Select, SelectOption } from "../../../components/ui/Select";
 import { Colors, Spacing } from "../../../constants/design";
+import { MEDICINE_TYPES } from "../../../constants/medicine-types";
 import { createMedicine } from "../../../lib/database/models/medicine";
 import { createSchedule } from "../../../lib/database/models/schedule";
 import { ensureUserExists } from "../../../lib/database/models/user";
 import { validateMedicineForm } from "../../../lib/utils/validation";
-
-const medicineTypes: SelectOption[] = [
-  { label: "Pill", value: "pill" },
-  { label: "Liquid", value: "liquid" },
-  { label: "Injection", value: "injection" },
-  { label: "Inhaler", value: "inhaler" },
-  { label: "Drops", value: "drops" },
-  { label: "Other", value: "other" },
-];
 
 const frequencies: SelectOption[] = [
   { label: "Daily", value: "daily" },
@@ -213,7 +205,7 @@ export default function AddMedicineScreen() {
             <Select
               label="Medicine Type"
               value={formData.type}
-              options={medicineTypes}
+              options={MEDICINE_TYPES}
               onSelect={(value) => {
                 setFormData({ ...formData, type: value });
                 setErrors({ ...errors, type: "" });
@@ -221,6 +213,7 @@ export default function AddMedicineScreen() {
               placeholder="Select type"
               error={errors.type}
               required
+              showIcons
             />
 
             <View style={styles.row}>

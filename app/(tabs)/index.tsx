@@ -36,6 +36,7 @@ import {
 import {
   formatDateTime,
   formatTime,
+  getTimeAgo,
   getTimeUntil,
   isOverdue,
 } from "../../lib/utils/date-helpers";
@@ -168,7 +169,7 @@ export default function HomeScreen() {
     id: dose.id,
     time: formatTime(new Date(dose.scheduled_time).toTimeString().slice(0, 5)),
     title: dose.medicine.name,
-    subtitle: `${dose.medicine.dosage} ${dose.medicine.unit} • ${getTimeUntil(
+    subtitle: `${dose.medicine.dosage} ${dose.medicine.unit} • ${getTimeAgo(
       new Date(dose.scheduled_time)
     )}`,
     status: getStatusForDose(dose),
@@ -196,45 +197,153 @@ export default function HomeScreen() {
       >
         {/* Progress Section */}
         <Card style={styles.progressCard}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            Today&apos;s Progress
-          </Text>
+          <View style={styles.progressHeader}>
+            <View>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                Today&apos;s Progress
+              </Text>
+              <Text
+                style={[
+                  styles.progressSubtitle,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                {new Date().toLocaleDateString("en-US", {
+                  weekday: "long",
+                  month: "short",
+                  day: "numeric",
+                })}
+              </Text>
+            </View>
+            <View
+              style={[
+                styles.percentageBadge,
+                { backgroundColor: colors.primary + "20" },
+              ]}
+            >
+              <Text style={[styles.percentageText, { color: colors.primary }]}>
+                {Math.round(todayProgress)}%
+              </Text>
+            </View>
+          </View>
+
           <View style={styles.progressContent}>
-            <ProgressRing progress={todayProgress} size={120} />
+            <ProgressRing progress={todayProgress} size={140} />
             <View style={styles.progressStats}>
-              <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: colors.success }]}>
-                  {stats.todayTaken}
-                </Text>
-                <Text
-                  style={[styles.statLabel, { color: colors.textSecondary }]}
+              <View
+                style={[
+                  styles.statItem,
+                  styles.statItemBordered,
+                  { borderColor: colors.border },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.statIconContainer,
+                    { backgroundColor: colors.success + "15" },
+                  ]}
                 >
-                  Taken
-                </Text>
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={24}
+                    color={colors.success}
+                  />
+                </View>
+                <View style={styles.statTextContainer}>
+                  <Text style={[styles.statValue, { color: colors.success }]}>
+                    {stats.todayTaken ?? 0}
+                  </Text>
+                  <Text
+                    style={[styles.statLabel, { color: colors.textSecondary }]}
+                  >
+                    Taken
+                  </Text>
+                </View>
               </View>
-              <View style={styles.statItem}>
-                <Text
-                  style={[styles.statValue, { color: colors.textSecondary }]}
+
+              <View
+                style={[
+                  styles.statItem,
+                  styles.statItemBordered,
+                  { borderColor: colors.border },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.statIconContainer,
+                    { backgroundColor: colors.primary + "15" },
+                  ]}
                 >
-                  {stats.todayTotal}
-                </Text>
-                <Text
-                  style={[styles.statLabel, { color: colors.textSecondary }]}
-                >
-                  Total
-                </Text>
+                  <Ionicons name="calendar" size={24} color={colors.primary} />
+                </View>
+                <View style={styles.statTextContainer}>
+                  <Text style={[styles.statValue, { color: colors.text }]}>
+                    {stats.todayTotal ?? 0}
+                  </Text>
+                  <Text
+                    style={[styles.statLabel, { color: colors.textSecondary }]}
+                  >
+                    Scheduled
+                  </Text>
+                </View>
               </View>
-              <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: colors.danger }]}>
-                  {stats.todayMissed}
-                </Text>
-                <Text
-                  style={[styles.statLabel, { color: colors.textSecondary }]}
+
+              <View
+                style={[
+                  styles.statItem,
+                  styles.statItemBordered,
+                  { borderColor: colors.border },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.statIconContainer,
+                    { backgroundColor: colors.danger + "15" },
+                  ]}
                 >
-                  Missed
-                </Text>
+                  <Ionicons
+                    name="close-circle"
+                    size={24}
+                    color={colors.danger}
+                  />
+                </View>
+                <View style={styles.statTextContainer}>
+                  <Text style={[styles.statValue, { color: colors.danger }]}>
+                    {stats.todayMissed ?? 0}
+                  </Text>
+                  <Text
+                    style={[styles.statLabel, { color: colors.textSecondary }]}
+                  >
+                    Missed
+                  </Text>
+                </View>
               </View>
             </View>
+          </View>
+
+          {/* Progress Bar */}
+          <View style={styles.progressBarContainer}>
+            <View
+              style={[
+                styles.progressBarBackground,
+                { backgroundColor: colors.border },
+              ]}
+            >
+              <View
+                style={[
+                  styles.progressBarFill,
+                  {
+                    backgroundColor: colors.success,
+                    width: `${todayProgress}%`,
+                  },
+                ]}
+              />
+            </View>
+            <Text
+              style={[styles.progressBarLabel, { color: colors.textSecondary }]}
+            >
+              {stats.todayTaken ?? 0} of {stats.todayTotal ?? 0} doses completed
+            </Text>
           </View>
         </Card>
 
@@ -243,7 +352,7 @@ export default function HomeScreen() {
           <Card style={styles.quickStatCard}>
             <Ionicons name="flame" size={24} color={colors.warning} />
             <Text style={[styles.quickStatValue, { color: colors.text }]}>
-              {stats.currentStreak}
+              {stats.currentStreak ?? 0}
             </Text>
             <Text
               style={[styles.quickStatLabel, { color: colors.textSecondary }]}
@@ -254,7 +363,7 @@ export default function HomeScreen() {
           <Card style={styles.quickStatCard}>
             <Ionicons name="trending-up" size={24} color={colors.success} />
             <Text style={[styles.quickStatValue, { color: colors.text }]}>
-              {Math.round(stats.weeklyAdherence)}%
+              {Math.round(stats.weeklyAdherence ?? 0)}%
             </Text>
             <Text
               style={[styles.quickStatLabel, { color: colors.textSecondary }]}
@@ -265,7 +374,7 @@ export default function HomeScreen() {
           <Card style={styles.quickStatCard}>
             <Ionicons name="medical" size={24} color={colors.primary} />
             <Text style={[styles.quickStatValue, { color: colors.text }]}>
-              {stats.activeMedicines}
+              {stats.activeMedicines ?? 0}
             </Text>
             <Text
               style={[styles.quickStatLabel, { color: colors.textSecondary }]}
@@ -398,29 +507,85 @@ const styles = StyleSheet.create({
   progressCard: {
     marginBottom: Spacing.md,
   },
+  progressHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: Spacing.lg,
+  },
   sectionTitle: {
     fontSize: Typography.fontSize.xl,
     fontWeight: Typography.fontWeight.semibold,
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.xs,
+  },
+  progressSubtitle: {
+    fontSize: Typography.fontSize.sm,
+    marginTop: Spacing.xs,
+  },
+  percentageBadge: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.lg,
+  },
+  percentageText: {
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.bold,
   },
   progressContent: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-around",
+    justifyContent: "space-between",
+    marginBottom: Spacing.lg,
   },
   progressStats: {
-    gap: Spacing.md,
+    flex: 1,
+    gap: Spacing.sm,
+    marginLeft: Spacing.lg,
   },
   statItem: {
+    flexDirection: "row",
     alignItems: "center",
+    gap: Spacing.sm,
+  },
+  statItemBordered: {
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+  },
+  statIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: BorderRadius.md,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  statTextContainer: {
+    flex: 1,
   },
   statValue: {
-    fontSize: Typography.fontSize["2xl"],
+    fontSize: Typography.fontSize.xl,
     fontWeight: Typography.fontWeight.bold,
   },
   statLabel: {
-    fontSize: Typography.fontSize.sm,
-    marginTop: Spacing.xs,
+    fontSize: Typography.fontSize.xs,
+    marginTop: 2,
+  },
+  progressBarContainer: {
+    gap: Spacing.sm,
+  },
+  progressBarBackground: {
+    height: 8,
+    borderRadius: BorderRadius.full,
+    overflow: "hidden",
+  },
+  progressBarFill: {
+    height: "100%",
+    borderRadius: BorderRadius.full,
+  },
+  progressBarLabel: {
+    fontSize: Typography.fontSize.xs,
+    textAlign: "center",
   },
   quickStats: {
     flexDirection: "row",

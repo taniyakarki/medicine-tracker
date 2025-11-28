@@ -7,6 +7,7 @@ import { Modal } from './Modal';
 export interface SelectOption {
   label: string;
   value: string;
+  icon?: keyof typeof Ionicons.glyphMap;
 }
 
 interface SelectProps {
@@ -18,6 +19,7 @@ interface SelectProps {
   error?: string;
   containerStyle?: ViewStyle;
   required?: boolean;
+  showIcons?: boolean;
 }
 
 export const Select: React.FC<SelectProps> = ({
@@ -29,6 +31,7 @@ export const Select: React.FC<SelectProps> = ({
   error,
   containerStyle,
   required = false,
+  showIcons = false,
 }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const colorScheme = useColorScheme();
@@ -91,6 +94,15 @@ export const Select: React.FC<SelectProps> = ({
             ]}
             onPress={() => handleSelect(option.value)}
           >
+            {showIcons && option.icon && (
+              <View style={styles.iconContainer}>
+                <Ionicons 
+                  name={option.icon} 
+                  size={24} 
+                  color={option.value === value ? '#FFFFFF' : colors.textSecondary} 
+                />
+              </View>
+            )}
             <Text
               style={[
                 styles.optionText,
@@ -148,6 +160,9 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     borderRadius: BorderRadius.md,
     marginBottom: Spacing.xs,
+  },
+  iconContainer: {
+    marginRight: Spacing.sm,
   },
   optionText: {
     fontSize: Typography.fontSize.base,

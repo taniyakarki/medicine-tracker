@@ -70,6 +70,8 @@ export const scheduleMedicineNotifications = async (
     }
 
     const now = new Date();
+    // Add a 1-minute buffer to prevent immediate notifications
+    const bufferTime = new Date(now.getTime() + 60 * 1000);
     const endDate = addDays(now, daysAhead);
 
     // Check if medicine has ended
@@ -98,8 +100,8 @@ export const scheduleMedicineNotifications = async (
           const scheduledTime = new Date(currentDate);
           scheduledTime.setHours(hours, minutes, 0, 0);
 
-          // Only schedule if it's in the future
-          if (scheduledTime > now && scheduledTime <= endDate) {
+          // Only schedule if it's in the future (with buffer)
+          if (scheduledTime > bufferTime && scheduledTime <= endDate) {
             await scheduleNotification({
               medicineId: medicine.id,
               medicineName: medicine.name,
@@ -128,7 +130,7 @@ export const scheduleMedicineNotifications = async (
             const scheduledTime = new Date(currentDate);
             scheduledTime.setHours(hours, minutes, 0, 0);
 
-            if (scheduledTime > now && scheduledTime <= endDate) {
+            if (scheduledTime > bufferTime && scheduledTime <= endDate) {
               await scheduleNotification({
                 medicineId: medicine.id,
                 medicineName: medicine.name,
@@ -145,22 +147,55 @@ export const scheduleMedicineNotifications = async (
       } else if (medicine.frequency === "interval" && schedule.interval_hours) {
         // Interval-based frequency - schedule at regular intervals
         const [hours, minutes] = schedule.time.split(":").map(Number);
-        let nextOccurrence = new Date(now);
-        nextOccurrence.setHours(hours, minutes, 0, 0);
 
-        // If the start time has passed today, start from the next interval
-        if (nextOccurrence <= now) {
-          const millisSinceStart = now.getTime() - nextOccurrence.getTime();
-          const intervalMillis = schedule.interval_hours * 60 * 60 * 1000;
-          const intervalsPassed = Math.ceil(millisSinceStart / intervalMillis);
-          nextOccurrence = new Date(
-            nextOccurrence.getTime() + intervalsPassed * intervalMillis
-          );
+        // Start from the medicine's start date
+        const startDate = new Date(medicine.start_date);
+        let firstOccurrence = new Date(startDate);
+        firstOccurrence.setHours(hours, minutes, 0, 0);
+
+        const intervalMillis = schedule.interval_hours * 60 * 60 * 1000;
+
+        // Create past doses as "missed" if the start time was in the past
+        if (firstOccurrence < now) {
+          let pastOccurrence = new Date(firstOccurrence);
+          const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+          // Only create past doses for the last 24 hours to avoid too many missed doses
+          while (pastOccurrence < now) {
+            if (pastOccurrence >= oneDayAgo && pastOccurrence < bufferTime) {
+              // Check if a dose already exists for this time
+              const existingDose = await executeQuery(
+                `SELECT id FROM doses 
+                 WHERE medicine_id = ? 
+                   AND schedule_id = ? 
+                   AND scheduled_time = ?
+                 LIMIT 1`,
+                [medicine.id, schedule.id, pastOccurrence.toISOString()]
+              );
+
+              // Only create if it doesn't exist
+              if (existingDose.length === 0) {
+                await createDose({
+                  medicine_id: medicine.id,
+                  schedule_id: schedule.id,
+                  scheduled_time: pastOccurrence.toISOString(),
+                  status: "missed",
+                });
+              }
+            }
+            pastOccurrence = new Date(
+              pastOccurrence.getTime() + intervalMillis
+            );
+          }
+
+          // Set next occurrence to the first future time
+          firstOccurrence = pastOccurrence;
         }
 
-        // Schedule all occurrences within the time window
+        // Schedule future occurrences
+        let nextOccurrence = new Date(firstOccurrence);
         while (nextOccurrence <= endDate) {
-          if (nextOccurrence > now) {
+          if (nextOccurrence > bufferTime) {
             await scheduleNotification({
               medicineId: medicine.id,
               medicineName: medicine.name,
@@ -172,9 +207,7 @@ export const scheduleMedicineNotifications = async (
           }
 
           // Add interval hours for next occurrence
-          nextOccurrence = new Date(
-            nextOccurrence.getTime() + schedule.interval_hours * 60 * 60 * 1000
-          );
+          nextOccurrence = new Date(nextOccurrence.getTime() + intervalMillis);
         }
       }
     }

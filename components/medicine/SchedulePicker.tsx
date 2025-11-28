@@ -53,6 +53,18 @@ export const SchedulePicker: React.FC<SchedulePickerProps> = ({
   const [editingTimeId, setEditingTimeId] = useState<string | null>(null);
   const [tempTime, setTempTime] = useState(new Date());
 
+  const formatTimeWithAMPM = (time: string) => {
+    try {
+      const [hours, minutes] = time.split(':');
+      const hour = parseInt(hours, 10);
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+      return `${displayHour}:${minutes} ${ampm}`;
+    } catch {
+      return time;
+    }
+  };
+
   const handleAddTime = () => {
     const now = new Date();
     now.setHours(9, 0, 0, 0);
@@ -160,7 +172,7 @@ export const SchedulePicker: React.FC<SchedulePickerProps> = ({
               No time slots added yet
             </Text>
             <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
-              Tap "Add Time" to schedule when to take this medicine
+              Tap &quot;Add Time&quot; to schedule when to take this medicine
             </Text>
           </Card>
         ) : (
@@ -173,7 +185,7 @@ export const SchedulePicker: React.FC<SchedulePickerProps> = ({
                 >
                   <Ionicons name="time" size={24} color={colors.primary} />
                   <Text style={[styles.timeText, { color: colors.text }]}>
-                    {timeSlot.time}
+                    {formatTimeWithAMPM(timeSlot.time)}
                   </Text>
                   <TouchableOpacity
                     onPress={() => handleRemoveTime(timeSlot.id)}
@@ -282,11 +294,11 @@ export const SchedulePicker: React.FC<SchedulePickerProps> = ({
             </Text>
           </View>
           <Text style={[styles.previewText, { color: colors.textSecondary }]}>
-            {frequency === 'daily' && `Daily at ${value.times.map(t => t.time).join(', ')}`}
+            {frequency === 'daily' && `Daily at ${value.times.map(t => formatTimeWithAMPM(t.time)).join(', ')}`}
             {frequency === 'specific_days' && value.daysOfWeek && value.daysOfWeek.length > 0 && 
-              `${DAYS_OF_WEEK.filter(d => value.daysOfWeek?.includes(d.value)).map(d => d.label).join(', ')} at ${value.times.map(t => t.time).join(', ')}`}
+              `${DAYS_OF_WEEK.filter(d => value.daysOfWeek?.includes(d.value)).map(d => d.label).join(', ')} at ${value.times.map(t => formatTimeWithAMPM(t.time)).join(', ')}`}
             {frequency === 'interval' && value.intervalHours && 
-              `Every ${value.intervalHours} hours starting at ${value.times[0]?.time || '09:00'}`}
+              `Every ${value.intervalHours} hours starting at ${formatTimeWithAMPM(value.times[0]?.time || '09:00')}`}
           </Text>
         </Card>
       )}
