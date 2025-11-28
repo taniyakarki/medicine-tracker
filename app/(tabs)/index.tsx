@@ -453,7 +453,7 @@ export default function HomeScreen() {
                       },
                     ]}
                   />
-                  <View>
+                  <View style={styles.activityContent}>
                     <Text
                       style={[styles.activityTitle, { color: colors.text }]}
                     >
@@ -461,12 +461,24 @@ export default function HomeScreen() {
                     </Text>
                     <Text
                       style={[
-                        styles.activityTime,
+                        styles.activityScheduled,
                         { color: colors.textSecondary },
                       ]}
                     >
-                      {formatDateTime(dose.taken_time || dose.scheduled_time)}
+                      Scheduled: {formatTime(new Date(dose.scheduled_time).toTimeString().slice(0, 5))}
                     </Text>
+                    {dose.status !== "missed" && (
+                      <Text
+                        style={[
+                          styles.activityTime,
+                          { color: colors.textSecondary },
+                        ]}
+                      >
+                        {dose.taken_time
+                          ? `${dose.status === "taken" ? "Taken" : "Marked"}: ${formatDateTime(dose.taken_time)}`
+                          : formatDateTime(dose.scheduled_time)}
+                      </Text>
+                    )}
                   </View>
                 </View>
                 <Text
@@ -625,7 +637,7 @@ const styles = StyleSheet.create({
   },
   activityLeft: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     flex: 1,
   },
   activityDot: {
@@ -633,14 +645,23 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     marginRight: Spacing.md,
+    marginTop: 6,
+  },
+  activityContent: {
+    flex: 1,
   },
   activityTitle: {
     fontSize: Typography.fontSize.base,
     fontWeight: Typography.fontWeight.medium,
   },
+  activityScheduled: {
+    fontSize: Typography.fontSize.xs,
+    marginTop: 2,
+    fontWeight: Typography.fontWeight.medium,
+  },
   activityTime: {
     fontSize: Typography.fontSize.xs,
-    marginTop: Spacing.xs,
+    marginTop: 2,
   },
   activityStatus: {
     fontSize: Typography.fontSize.sm,
