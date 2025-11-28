@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect } from "expo-router";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useMemo } from "react";
 import {
   Alert,
   RefreshControl,
@@ -75,13 +75,12 @@ export default function HomeScreen() {
   // Reload data when screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      Promise.all([
-        refreshStats(),
-        refreshDoses(),
-        refreshActivity(),
-        loadPastDoses(),
-      ]);
-    }, [refreshStats, refreshDoses, refreshActivity, loadPastDoses])
+      refreshStats();
+      refreshDoses();
+      refreshActivity();
+      loadPastDoses();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
   );
 
   const handleRefresh = async () => {
@@ -95,7 +94,7 @@ export default function HomeScreen() {
     setRefreshing(false);
   };
 
-  const handleTakeDose = async (doseId: string) => {
+  const handleTakeDose = useCallback(async (doseId: string) => {
     try {
       // Optimistically update past doses list
       setPastDoses((prev) => prev.filter((dose) => dose.id !== doseId));
@@ -119,9 +118,9 @@ export default function HomeScreen() {
       // Reload data to revert optimistic update
       await loadPastDoses();
     }
-  };
+  }, [refreshStats, refreshDoses, refreshActivity, loadPastDoses]);
 
-  const handleSkipDose = async (doseId: string) => {
+  const handleSkipDose = useCallback(async (doseId: string) => {
     try {
       // Optimistically update past doses list
       setPastDoses((prev) => prev.filter((dose) => dose.id !== doseId));
@@ -145,38 +144,48 @@ export default function HomeScreen() {
       // Reload data to revert optimistic update
       await loadPastDoses();
     }
-  };
+  }, [refreshStats, refreshDoses, refreshActivity, loadPastDoses]);
 
-  const todayProgress =
-    stats.todayTotal > 0 ? (stats.todayTaken / stats.todayTotal) * 100 : 0;
+  const todayProgress = useMemo(
+    () => (stats.todayTotal > 0 ? (stats.todayTaken / stats.todayTotal) * 100 : 0),
+    [stats.todayTotal, stats.todayTaken]
+  );
 
-  const getStatusForDose = (dose: any): TimelineItem["status"] => {
+  const getStatusForDose = useCallback((dose: any): TimelineItem["status"] => {
     if (dose.status === "taken") return "taken";
     if (dose.status === "missed") return "missed";
     if (dose.status === "skipped") return "skipped";
     if (isOverdue(dose.scheduled_time)) return "overdue";
     return "scheduled";
-  };
+  }, []);
 
-  const timelineItems: TimelineItem[] = upcomingDoses.map((dose) => ({
-    id: dose.id,
-    time: formatTime(new Date(dose.scheduled_time).toTimeString().slice(0, 5)),
-    title: dose.medicine.name,
-    subtitle: `${dose.medicine.dosage} ${dose.medicine.unit} • ${getTimeUntil(
-      new Date(dose.scheduled_time)
-    )}`,
-    status: getStatusForDose(dose),
-  }));
+  const timelineItems: TimelineItem[] = useMemo(
+    () =>
+      upcomingDoses.map((dose) => ({
+        id: dose.id,
+        time: formatTime(new Date(dose.scheduled_time).toTimeString().slice(0, 5)),
+        title: dose.medicine.name,
+        subtitle: `${dose.medicine.dosage} ${dose.medicine.unit} • ${getTimeUntil(
+          new Date(dose.scheduled_time)
+        )}`,
+        status: getStatusForDose(dose),
+      })),
+    [upcomingDoses, getStatusForDose]
+  );
 
-  const pastTimelineItems: TimelineItem[] = pastDoses.map((dose) => ({
-    id: dose.id,
-    time: formatTime(new Date(dose.scheduled_time).toTimeString().slice(0, 5)),
-    title: dose.medicine.name,
-    subtitle: `${dose.medicine.dosage} ${dose.medicine.unit} • ${getTimeAgo(
-      new Date(dose.scheduled_time)
-    )}`,
-    status: getStatusForDose(dose),
-  }));
+  const pastTimelineItems: TimelineItem[] = useMemo(
+    () =>
+      pastDoses.map((dose) => ({
+        id: dose.id,
+        time: formatTime(new Date(dose.scheduled_time).toTimeString().slice(0, 5)),
+        title: dose.medicine.name,
+        subtitle: `${dose.medicine.dosage} ${dose.medicine.unit} • ${getTimeAgo(
+          new Date(dose.scheduled_time)
+        )}`,
+        status: getStatusForDose(dose),
+      })),
+    [pastDoses, getStatusForDose]
+  );
 
   if (statsLoading && !refreshing) {
     return <LoadingSpinner fullScreen />;

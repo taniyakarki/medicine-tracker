@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Medicine, MedicineWithNextDose } from '../../types/medicine';
 import {
   getAllMedicines,
@@ -11,16 +11,32 @@ import {
 } from '../database/models/medicine';
 import { ensureUserExists } from '../database/models/user';
 
+const CACHE_DURATION = 30000; // 30 seconds
+
 export const useMedicines = () => {
   const [medicines, setMedicines] = useState<MedicineWithNextDose[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const cacheRef = useRef<{ data: MedicineWithNextDose[], timestamp: number } | null>(null);
 
-  const loadMedicines = useCallback(async () => {
+  const loadMedicines = useCallback(async (forceRefresh = false) => {
+    const now = Date.now();
+    
+    // Return cached data if fresh and not forcing refresh
+    if (!forceRefresh && cacheRef.current && 
+        (now - cacheRef.current.timestamp) < CACHE_DURATION) {
+      setMedicines(cacheRef.current.data);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       const user = await ensureUserExists();
       const data = await getActiveMedicinesWithNextDose(user.id);
+      
+      // Update cache
+      cacheRef.current = { data, timestamp: now };
       setMedicines(data);
       setError(null);
     } catch (err) {
@@ -33,41 +49,42 @@ export const useMedicines = () => {
 
   useEffect(() => {
     loadMedicines();
-  }, [loadMedicines]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const createMedicine = async (medicineData: Omit<Medicine, 'id' | 'created_at' | 'updated_at' | 'sync_flag'>) => {
+  const createMedicine = useCallback(async (medicineData: Omit<Medicine, 'id' | 'created_at' | 'updated_at' | 'sync_flag'>) => {
     try {
       const user = await ensureUserExists();
       await createMedicineDB({ ...medicineData, user_id: user.id });
-      await loadMedicines();
+      await loadMedicines(true); // Force refresh after create
     } catch (err) {
       throw new Error(err instanceof Error ? err.message : 'Failed to create medicine');
     }
-  };
+  }, [loadMedicines]);
 
-  const updateMedicine = async (id: string, medicineData: Partial<Medicine>) => {
+  const updateMedicine = useCallback(async (id: string, medicineData: Partial<Medicine>) => {
     try {
       await updateMedicineDB(id, medicineData);
-      await loadMedicines();
+      await loadMedicines(true); // Force refresh after update
     } catch (err) {
       throw new Error(err instanceof Error ? err.message : 'Failed to update medicine');
     }
-  };
+  }, [loadMedicines]);
 
-  const deleteMedicine = async (id: string) => {
+  const deleteMedicine = useCallback(async (id: string) => {
     try {
       await deleteMedicineDB(id);
-      await loadMedicines();
+      await loadMedicines(true); // Force refresh after delete
     } catch (err) {
       throw new Error(err instanceof Error ? err.message : 'Failed to delete medicine');
     }
-  };
+  }, [loadMedicines]);
 
   return {
     medicines,
     loading,
     error,
-    refresh: loadMedicines,
+    refresh: () => loadMedicines(true),
     createMedicine,
     updateMedicine,
     deleteMedicine,
@@ -95,7 +112,8 @@ export const useMedicine = (id: string) => {
 
   useEffect(() => {
     loadMedicine();
-  }, [loadMedicine]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   return {
     medicine,

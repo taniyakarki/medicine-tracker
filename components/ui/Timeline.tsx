@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo, useCallback } from 'react';
 import { View, Text, StyleSheet , useColorScheme, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius } from '../../constants/design';
@@ -18,7 +18,7 @@ interface TimelineProps {
   showActions?: boolean;
 }
 
-export const Timeline: React.FC<TimelineProps> = ({ 
+export const Timeline = memo<TimelineProps>(({ 
   items, 
   onTakeDose, 
   onSkipDose, 
@@ -28,7 +28,7 @@ export const Timeline: React.FC<TimelineProps> = ({
   const isDark = colorScheme === 'dark';
   const colors = isDark ? Colors.dark : Colors.light;
 
-  const getStatusColor = (status?: string) => {
+  const getStatusColor = useCallback((status?: string) => {
     switch (status) {
       case 'taken':
         return colors.success;
@@ -41,11 +41,11 @@ export const Timeline: React.FC<TimelineProps> = ({
       default:
         return colors.primary;
     }
-  };
+  }, [colors]);
 
-  const canShowActions = (item: TimelineItem) => {
+  const canShowActions = useCallback((item: TimelineItem) => {
     return showActions && (item.status === 'scheduled' || item.status === 'overdue');
-  };
+  }, [showActions]);
 
   return (
     <View style={styles.container}>
@@ -110,7 +110,13 @@ export const Timeline: React.FC<TimelineProps> = ({
       ))}
     </View>
   );
-};
+}, (prevProps, nextProps) => {
+  // Only re-render if items array or callbacks change
+  return prevProps.items === nextProps.items &&
+         prevProps.showActions === nextProps.showActions &&
+         prevProps.onTakeDose === nextProps.onTakeDose &&
+         prevProps.onSkipDose === nextProps.onSkipDose;
+});
 
 const styles = StyleSheet.create({
   container: {

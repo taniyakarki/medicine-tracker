@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
+  FlatList,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -17,6 +18,7 @@ interface DoseHistoryListProps {
   hasMore?: boolean;
   loading?: boolean;
   showMedicineName?: boolean;
+  nested?: boolean; // If true, renders without FlatList for nested ScrollView compatibility
 }
 
 type FilterType = "all" | "taken" | "missed" | "skipped";
@@ -27,6 +29,7 @@ export const DoseHistoryList: React.FC<DoseHistoryListProps> = ({
   hasMore = false,
   loading = false,
   showMedicineName = true,
+  nested = false,
 }) => {
   const colorScheme = useColorScheme();
   const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
@@ -179,7 +182,7 @@ export const DoseHistoryList: React.FC<DoseHistoryListProps> = ({
     );
   };
 
-  const renderDoseItem = ({ item }: { item: DoseWithMedicine }) => {
+  const renderDoseItem = useCallback(({ item }: { item: DoseWithMedicine }) => {
     const statusColor = getStatusColor(item.status);
     const statusIcon = getStatusIcon(item.status);
 
@@ -283,9 +286,11 @@ export const DoseHistoryList: React.FC<DoseHistoryListProps> = ({
         )}
       </Card>
     );
-  };
+  }, [showMedicineName, colors]);
 
-  const renderEmpty = () => (
+  const keyExtractor = useCallback((item: DoseWithMedicine) => item.id, []);
+
+  const renderEmpty = useCallback(() => (
     <Card style={styles.emptyCard}>
       <Ionicons
         name="calendar-outline"
@@ -301,9 +306,9 @@ export const DoseHistoryList: React.FC<DoseHistoryListProps> = ({
           : "Dose history will appear here once you start tracking"}
       </Text>
     </Card>
-  );
+  ), [filter, colors]);
 
-  const renderFooter = () => {
+  const renderFooter = useCallback(() => {
     if (!hasMore) return null;
 
     return (
@@ -320,7 +325,7 @@ export const DoseHistoryList: React.FC<DoseHistoryListProps> = ({
         </Text>
       </TouchableOpacity>
     );
-  };
+  }, [hasMore, loading, onLoadMore, colors]);
 
   const stats = {
     all: doses.length,
@@ -340,18 +345,38 @@ export const DoseHistoryList: React.FC<DoseHistoryListProps> = ({
       </View>
 
       {/* Dose List */}
-      <View style={styles.listContent}>
-        {filteredDoses.length === 0 ? (
-          renderEmpty()
-        ) : (
-          <>
-            {filteredDoses.map((item) => (
-              <View key={item.id}>{renderDoseItem({ item })}</View>
-            ))}
-            {renderFooter()}
-          </>
-        )}
-      </View>
+      {nested ? (
+        // Render without FlatList when nested in ScrollView
+        <View style={styles.listContent}>
+          {filteredDoses.length === 0 ? (
+            renderEmpty()
+          ) : (
+            <>
+              {filteredDoses.map((item) => (
+                <View key={item.id}>{renderDoseItem({ item })}</View>
+              ))}
+              {renderFooter()}
+            </>
+          )}
+        </View>
+      ) : (
+        // Use FlatList for standalone usage
+        <FlatList
+          data={filteredDoses}
+          renderItem={renderDoseItem}
+          keyExtractor={keyExtractor}
+          contentContainerStyle={styles.listContent}
+          ListEmptyComponent={renderEmpty}
+          ListFooterComponent={renderFooter}
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={8}
+          updateCellsBatchingPeriod={50}
+          initialNumToRender={10}
+          windowSize={5}
+          onEndReached={onLoadMore}
+          onEndReachedThreshold={0.5}
+        />
+      )}
     </View>
   );
 };

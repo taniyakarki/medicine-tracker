@@ -3,6 +3,12 @@ export interface User {
   name: string;
   email?: string;
   phone?: string;
+  date_of_birth?: string;
+  gender?: string;
+  address?: string;
+  blood_type?: string;
+  allergies?: string;
+  medical_conditions?: string;
   profile_image?: string;
   created_at: string;
   updated_at: string;
@@ -12,10 +18,10 @@ export interface Medicine {
   id: string;
   user_id: string;
   name: string;
-  type: 'pill' | 'liquid' | 'injection' | 'inhaler' | 'drops' | 'other';
+  type: "pill" | "liquid" | "injection" | "inhaler" | "drops" | "other";
   dosage: string;
   unit: string;
-  frequency: 'daily' | 'specific_days' | 'interval';
+  frequency: "daily" | "specific_days" | "interval";
   start_date: string;
   end_date?: string;
   notes?: string;
@@ -44,7 +50,7 @@ export interface Dose {
   schedule_id: string;
   scheduled_time: string; // ISO datetime
   taken_time?: string; // ISO datetime
-  status: 'scheduled' | 'taken' | 'missed' | 'skipped';
+  status: "scheduled" | "taken" | "missed" | "skipped";
   notes?: string;
   created_at: string;
 }
@@ -95,4 +101,3 @@ export interface NotificationSettings {
   created_at: string;
   updated_at: string;
 }
-

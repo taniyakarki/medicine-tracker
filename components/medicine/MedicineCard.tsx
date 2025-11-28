@@ -1,5 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, useColorScheme, Image } from 'react-native';
+import React, { memo } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, useColorScheme } from 'react-native';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/design';
 import { MedicineTypeIcon } from './MedicineTypeIcon';
@@ -10,7 +11,7 @@ interface MedicineCardProps {
   medicine: MedicineWithNextDose;
 }
 
-export const MedicineCard: React.FC<MedicineCardProps> = ({ medicine }) => {
+export const MedicineCard = memo<MedicineCardProps>(({ medicine }) => {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -31,7 +32,13 @@ export const MedicineCard: React.FC<MedicineCardProps> = ({ medicine }) => {
       activeOpacity={0.7}
     >
       {medicine.image ? (
-        <Image source={{ uri: medicine.image }} style={styles.medicineImage} />
+        <Image 
+          source={{ uri: medicine.image }} 
+          style={styles.medicineImage}
+          contentFit="cover"
+          transition={200}
+          cachePolicy="memory-disk"
+        />
       ) : medicine.color ? (
         <View style={[styles.colorIcon, { backgroundColor: medicine.color }]}>
           <MedicineTypeIcon type={medicine.type} size={24} color="#FFFFFF" />
@@ -52,7 +59,12 @@ export const MedicineCard: React.FC<MedicineCardProps> = ({ medicine }) => {
       </View>
     </TouchableOpacity>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison for optimal re-rendering
+  return prevProps.medicine.id === nextProps.medicine.id &&
+         prevProps.medicine.updated_at === nextProps.medicine.updated_at &&
+         prevProps.medicine.nextDose?.time === nextProps.medicine.nextDose?.time;
+});
 
 const styles = StyleSheet.create({
   card: {

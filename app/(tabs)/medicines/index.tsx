@@ -1,17 +1,25 @@
-import React, { useCallback, useState } from 'react';
-import { View, ScrollView, StyleSheet, RefreshControl, TouchableOpacity , useColorScheme } from 'react-native';
-import { useFocusEffect, useRouter } from 'expo-router';
-import { Colors, Spacing } from '../../../constants/design';
-import { useMedicines } from '../../../lib/hooks/useMedicines';
-import { MedicineCard } from '../../../components/medicine/MedicineCard';
-import { EmptyState } from '../../../components/ui/EmptyState';
-import { LoadingSpinner } from '../../../components/ui/LoadingSpinner';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect, useRouter } from "expo-router";
+import React, { useCallback, useState } from "react";
+import {
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  TouchableOpacity,
+  useColorScheme,
+  View,
+} from "react-native";
+import { MedicineCard } from "../../../components/medicine/MedicineCard";
+import { EmptyState } from "../../../components/ui/EmptyState";
+import { LoadingSpinner } from "../../../components/ui/LoadingSpinner";
+import { Colors, Spacing } from "../../../constants/design";
+import { useMedicines } from "../../../lib/hooks/useMedicines";
+import { MedicineWithNextDose } from "../../../types/medicine";
 
 export default function MedicinesListScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
-  const colors = colorScheme === 'dark' ? Colors.dark : Colors.light;
+  const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
   const { medicines, loading, refresh } = useMedicines();
   const [refreshing, setRefreshing] = useState(false);
 
@@ -19,7 +27,8 @@ export default function MedicinesListScreen() {
   useFocusEffect(
     useCallback(() => {
       refresh();
-    }, [refresh])
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
   );
 
   const handleRefresh = async () => {
@@ -28,9 +37,31 @@ export default function MedicinesListScreen() {
     setRefreshing(false);
   };
 
-  const handleAddMedicine = () => {
-    router.push('/medicines/add');
-  };
+  const handleAddMedicine = useCallback(() => {
+    router.push("/medicines/add");
+  }, [router]);
+
+  const renderMedicineCard = useCallback(
+    ({ item }: { item: MedicineWithNextDose }) => (
+      <MedicineCard medicine={item} />
+    ),
+    []
+  );
+
+  const keyExtractor = useCallback((item: MedicineWithNextDose) => item.id, []);
+
+  const renderEmptyComponent = useCallback(
+    () => (
+      <EmptyState
+        icon="medical-outline"
+        title="No Medicines Yet"
+        description="Add your first medicine to start tracking your medication schedule"
+        actionLabel="Add Medicine"
+        onAction={handleAddMedicine}
+      />
+    ),
+    [handleAddMedicine]
+  );
 
   if (loading && !refreshing) {
     return <LoadingSpinner fullScreen />;
@@ -38,8 +69,10 @@ export default function MedicinesListScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView
-        style={styles.scrollView}
+      <FlatList
+        data={medicines}
+        renderItem={renderMedicineCard}
+        keyExtractor={keyExtractor}
         contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl
@@ -48,21 +81,13 @@ export default function MedicinesListScreen() {
             tintColor={colors.primary}
           />
         }
-      >
-        {medicines.length === 0 ? (
-          <EmptyState
-            icon="medical-outline"
-            title="No Medicines Yet"
-            description="Add your first medicine to start tracking your medication schedule"
-            actionLabel="Add Medicine"
-            onAction={handleAddMedicine}
-          />
-        ) : (
-          medicines.map((medicine) => (
-            <MedicineCard key={medicine.id} medicine={medicine} />
-          ))
-        )}
-      </ScrollView>
+        ListEmptyComponent={renderEmptyComponent}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={10}
+        updateCellsBatchingPeriod={50}
+        initialNumToRender={10}
+        windowSize={10}
+      />
 
       <TouchableOpacity
         style={[styles.fab, { backgroundColor: colors.primary }]}
@@ -78,28 +103,24 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  scrollView: {
-    flex: 1,
-  },
   scrollContent: {
     padding: Spacing.md,
     paddingBottom: 100,
     flexGrow: 1,
   },
   fab: {
-    position: 'absolute',
+    position: "absolute",
     right: Spacing.lg,
     bottom: Spacing.lg,
     width: 56,
     height: 56,
     borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     elevation: 8,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
   },
 });
-

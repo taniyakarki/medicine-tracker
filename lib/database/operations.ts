@@ -1,10 +1,10 @@
 import * as SQLite from "expo-sqlite";
+import { ensureUserProfileColumns } from "./force-migration";
 import {
   DATABASE_NAME,
-  DATABASE_VERSION,
   createTables,
+  getCurrentVersion,
   runMigrations,
-  setVersion,
 } from "./schema";
 
 let dbInstance: SQLite.SQLiteDatabase | null = null;
@@ -20,11 +20,20 @@ export const initDatabase = async (): Promise<SQLite.SQLiteDatabase> => {
     // Create tables
     await createTables(db);
 
-    // Run migrations
+    // Get version before migrations
+    const versionBefore = await getCurrentVersion(db);
+
+    // Run migrations (this will also set the version)
     await runMigrations(db);
 
-    // Set current version
-    await setVersion(db, DATABASE_VERSION);
+    // Get version after migrations
+    const versionAfter = await getCurrentVersion(db);
+
+    // Only force ensure columns if migration just ran or version is less than 3
+    if (versionBefore < 3 || versionAfter < 3) {
+      console.log("Ensuring user profile columns exist...");
+      await ensureUserProfileColumns(db);
+    }
 
     dbInstance = db;
     console.log("Database initialized successfully");
@@ -149,13 +158,34 @@ export const update = async <T extends Record<string, any>>(
   id: string,
   data: Partial<T>
 ): Promise<void> => {
+  // Filter out undefined values and convert them to null
+  const cleanedData: Record<string, any> = {};
+  Object.keys(data).forEach((key) => {
+    const value = data[key];
+    // Only include defined values or explicitly set null
+    if (value !== undefined) {
+      cleanedData[key] = value === "" ? null : value;
+    }
+  });
+
+  // If no data to update, return early
+  if (Object.keys(cleanedData).length === 0) {
+    console.warn(`No data to update for ${table} with id ${id}`);
+    return;
+  }
+
   // Only add updated_at for tables that have this column
-  const tablesWithUpdatedAt = ['users', 'medicines', 'schedules', 'notification_settings'];
+  const tablesWithUpdatedAt = [
+    "users",
+    "medicines",
+    "schedules",
+    "notification_settings",
+  ];
   const shouldAddUpdatedAt = tablesWithUpdatedAt.includes(table);
-  
-  const fullData = shouldAddUpdatedAt 
-    ? { ...data, updated_at: getCurrentTimestamp() }
-    : { ...data };
+
+  const fullData = shouldAddUpdatedAt
+    ? { ...cleanedData, updated_at: getCurrentTimestamp() }
+    : { ...cleanedData };
 
   const columns = Object.keys(fullData);
   const setClause = columns.map((col) => `${col} = ?`).join(", ");
@@ -163,7 +193,14 @@ export const update = async <T extends Record<string, any>>(
 
   const query = `UPDATE ${table} SET ${setClause} WHERE id = ?`;
 
-  await executeUpdate(query, values);
+  try {
+    await executeUpdate(query, values);
+  } catch (error) {
+    console.error(`Error updating ${table}:`, error);
+    console.error(`Query: ${query}`);
+    console.error(`Values:`, values);
+    throw error;
+  }
 };
 
 // Generic delete function

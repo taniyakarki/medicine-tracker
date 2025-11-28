@@ -4,14 +4,15 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Image,
   Alert,
   useColorScheme,
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePickerLib from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system';
+import { Image } from 'expo-image';
 import { Colors, Spacing, Typography } from '../../constants/design';
 import { Card } from '../ui/Card';
 
@@ -52,9 +53,14 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({
         throw new Error('File does not exist');
       }
 
-      // For now, we'll just return the URI
-      // In production, you might want to use expo-image-manipulator for compression
-      return uri;
+      // Compress and resize image for optimal performance
+      const manipResult = await ImageManipulator.manipulateAsync(
+        uri,
+        [{ resize: { width: 800, height: 800 } }],
+        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+      );
+      
+      return manipResult.uri;
     } catch (error) {
       console.error('Error compressing image:', error);
       return uri;
@@ -171,7 +177,13 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({
 
       {value ? (
         <Card style={styles.imageCard}>
-          <Image source={{ uri: value }} style={styles.image} />
+          <Image 
+            source={{ uri: value }} 
+            style={styles.image}
+            contentFit="cover"
+            transition={200}
+            cachePolicy="memory-disk"
+          />
           <View style={styles.imageOverlay}>
             <TouchableOpacity
               onPress={showImageOptions}

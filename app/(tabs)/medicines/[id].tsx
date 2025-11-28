@@ -49,7 +49,8 @@ export default function MedicineDetailScreen() {
         refreshMedicine();
         loadSchedulesAndDoses();
       }
-    }, [id, refreshMedicine])
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [id])
   );
 
   const loadSchedulesAndDoses = async () => {
@@ -635,7 +636,11 @@ export default function MedicineDetailScreen() {
           ) : (
             showHistory && (
               <View style={styles.historyContainer}>
-                <DoseHistoryList doses={doses} showMedicineName={false} />
+                <DoseHistoryList
+                  doses={doses}
+                  showMedicineName={false}
+                  nested={true}
+                />
               </View>
             )
           )}

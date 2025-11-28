@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { useEffect, useState } from "react";
-import { useColorScheme } from "react-native";
+import { Platform, useColorScheme } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Colors } from "../constants/design";
 import { removeDuplicateDoses } from "../lib/database/models/dose";
@@ -78,11 +78,20 @@ export default function RootLayout() {
           headerShadowVisible: false,
           contentStyle: {
             backgroundColor: colors.background,
+            flex: 1,
           },
+          // Prevent flickering during navigation
+          animationEnabled: true,
+          animationTypeForReplace: "push",
+          // Detach previous screen to prevent flickering
+          detachPreviousScreen: Platform.OS === "android",
         }}
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="onboarding/index" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="onboarding/index"
+          options={{ headerShown: false }}
+        />
         <Stack.Screen
           name="notification-screen"
           options={{

@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
@@ -13,10 +14,16 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
 import { LoadingSpinner } from "../../../components/ui/LoadingSpinner";
-import { Colors, Spacing, Typography } from "../../../constants/design";
+import {
+  BorderRadius,
+  Colors,
+  Gradients,
+  Shadows,
+  Spacing,
+  Typography,
+} from "../../../constants/design";
 import { getEmergencyContactsByUserId } from "../../../lib/database/models/emergency-contact";
 import { ensureNotificationSettings } from "../../../lib/database/models/notification-settings";
 import { ensureUserExists } from "../../../lib/database/models/user";
@@ -61,7 +68,8 @@ export default function ProfileScreen() {
   useFocusEffect(
     useCallback(() => {
       loadData();
-    }, [loadData])
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
   );
 
   const handleEditProfile = () => {
@@ -126,26 +134,6 @@ export default function ProfileScreen() {
     Alert.alert("Export Data", "Data export feature coming soon!");
   };
 
-  const handleClearData = () => {
-    Alert.alert(
-      "Clear All Data",
-      "Are you sure you want to delete all your data? This action cannot be undone.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete All",
-          style: "destructive",
-          onPress: () => {
-            Alert.alert(
-              "Coming Soon",
-              "Data clearing will be implemented soon"
-            );
-          },
-        },
-      ]
-    );
-  };
-
   if (loading) {
     return <LoadingSpinner fullScreen />;
   }
@@ -160,59 +148,196 @@ export default function ProfileScreen() {
         ]}
       >
         {/* Profile Section */}
-        <Card style={styles.section}>
-          <View style={styles.profileHeader}>
-            <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-              <Text style={styles.avatarText}>
-                {user?.name.charAt(0).toUpperCase() || "U"}
+        <View style={[styles.section, styles.profileCard]}>
+          <LinearGradient
+            colors={
+              colorScheme === "dark"
+                ? Gradients.dark.active
+                : Gradients.light.active
+            }
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[styles.gradientCard, Shadows.md]}
+          >
+            <View style={styles.cardHeader}>
+              <View style={styles.cardHeaderLeft}>
+                <View style={styles.avatarGradient}>
+                  <LinearGradient
+                    colors={["rgba(255,255,255,0.3)", "rgba(255,255,255,0.1)"]}
+                    style={styles.avatar}
+                  >
+                    <Text style={styles.avatarText}>
+                      {user?.name.charAt(0).toUpperCase() || "U"}
+                    </Text>
+                  </LinearGradient>
+                </View>
+                <View style={styles.cardHeaderInfo}>
+                  <Text style={[styles.cardTitle, { color: "#FFFFFF" }]}>
+                    {user?.name}
+                  </Text>
+                  {(user?.email || user?.phone) && (
+                    <Text
+                      style={[
+                        styles.cardSubtitle,
+                        { color: "rgba(255,255,255,0.8)" },
+                      ]}
+                    >
+                      {user?.email || user?.phone}
+                    </Text>
+                  )}
+                </View>
+              </View>
+              <TouchableOpacity
+                onPress={handleEditProfile}
+                style={styles.editIconButton}
+              >
+                <Ionicons name="create-outline" size={24} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Quick Info Grid */}
+            {(user?.date_of_birth || user?.gender) && (
+              <View style={styles.infoGrid}>
+                {user?.date_of_birth && (
+                  <View style={styles.infoItem}>
+                    <Ionicons
+                      name="calendar-outline"
+                      size={16}
+                      color="rgba(255,255,255,0.9)"
+                    />
+                    <Text
+                      style={[
+                        styles.infoText,
+                        { color: "rgba(255,255,255,0.9)" },
+                      ]}
+                    >
+                      {new Date(user.date_of_birth).toLocaleDateString()}
+                    </Text>
+                  </View>
+                )}
+                {user?.gender && (
+                  <View style={styles.infoItem}>
+                    <Ionicons
+                      name="person-outline"
+                      size={16}
+                      color="rgba(255,255,255,0.9)"
+                    />
+                    <Text
+                      style={[
+                        styles.infoText,
+                        { color: "rgba(255,255,255,0.9)" },
+                      ]}
+                    >
+                      {user.gender}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
+          </LinearGradient>
+        </View>
+
+        {/* Medical Information */}
+        {(user?.blood_type || user?.allergies || user?.medical_conditions) && (
+          <Card style={styles.section}>
+            <View style={styles.sectionTitleContainer}>
+              <Ionicons name="medical" size={24} color={colors.danger} />
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                Medical Information
               </Text>
             </View>
-            <View style={styles.profileInfo}>
-              <Text style={[styles.profileName, { color: colors.text }]}>
-                {user?.name}
-              </Text>
-              {user?.email && (
-                <View style={styles.detailRow}>
-                  <Ionicons
-                    name="mail-outline"
-                    size={16}
-                    color={colors.textSecondary}
-                  />
-                  <Text
+
+            {/* Medical Info Items */}
+            <View style={styles.medicalList}>
+              {user?.blood_type && (
+                <View style={styles.medicalItem}>
+                  <View
                     style={[
-                      styles.profileDetail,
-                      { color: colors.textSecondary },
+                      styles.medicalIconContainer,
+                      { backgroundColor: colors.danger + "15" },
                     ]}
                   >
-                    {user.email}
-                  </Text>
+                    <Ionicons name="water" size={20} color={colors.danger} />
+                  </View>
+                  <View style={styles.medicalItemContent}>
+                    <Text
+                      style={[styles.medicalItemTitle, { color: colors.text }]}
+                    >
+                      Blood Type
+                    </Text>
+                    <Text
+                      style={[
+                        styles.medicalItemValue,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      {user.blood_type}
+                    </Text>
+                  </View>
                 </View>
               )}
-              {user?.phone && (
-                <View style={styles.detailRow}>
-                  <Ionicons
-                    name="call-outline"
-                    size={16}
-                    color={colors.textSecondary}
-                  />
-                  <Text
+
+              {user?.allergies && (
+                <View style={styles.medicalItem}>
+                  <View
                     style={[
-                      styles.profileDetail,
-                      { color: colors.textSecondary },
+                      styles.medicalIconContainer,
+                      { backgroundColor: colors.danger + "15" },
                     ]}
                   >
-                    {user.phone}
-                  </Text>
+                    <Ionicons name="warning" size={20} color={colors.danger} />
+                  </View>
+                  <View style={styles.medicalItemContent}>
+                    <Text
+                      style={[styles.medicalItemTitle, { color: colors.text }]}
+                    >
+                      Allergies
+                    </Text>
+                    <Text
+                      style={[
+                        styles.medicalItemValue,
+                        styles.alertText,
+                        { color: colors.danger },
+                      ]}
+                      numberOfLines={3}
+                    >
+                      {user.allergies}
+                    </Text>
+                  </View>
+                </View>
+              )}
+
+              {user?.medical_conditions && (
+                <View style={styles.medicalItem}>
+                  <View
+                    style={[
+                      styles.medicalIconContainer,
+                      { backgroundColor: colors.info + "15" },
+                    ]}
+                  >
+                    <Ionicons name="fitness" size={20} color={colors.info} />
+                  </View>
+                  <View style={styles.medicalItemContent}>
+                    <Text
+                      style={[styles.medicalItemTitle, { color: colors.text }]}
+                    >
+                      Medical Conditions
+                    </Text>
+                    <Text
+                      style={[
+                        styles.medicalItemValue,
+                        { color: colors.textSecondary },
+                      ]}
+                      numberOfLines={3}
+                    >
+                      {user.medical_conditions}
+                    </Text>
+                  </View>
                 </View>
               )}
             </View>
-          </View>
-          <Button
-            title="Edit Profile"
-            onPress={handleEditProfile}
-            variant="ghost"
-          />
-        </Card>
+          </Card>
+        )}
 
         {/* Emergency Contacts */}
         <Card style={styles.section}>
@@ -341,11 +466,7 @@ export default function ProfileScreen() {
                       handleMessageContact(contact.phone);
                     }}
                   >
-                    <Ionicons
-                      name="chatbubble"
-                      size={20}
-                      color={colors.info}
-                    />
+                    <Ionicons name="chatbubble" size={20} color={colors.info} />
                   </TouchableOpacity>
                 </View>
               </TouchableOpacity>
@@ -582,19 +703,6 @@ export default function ProfileScreen() {
           </View>
         </Card>
 
-        {/* Danger Zone */}
-        <Card style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.danger }]}>
-            Danger Zone
-          </Text>
-          <Button
-            title="Clear All Data"
-            onPress={handleClearData}
-            variant="danger"
-            style={styles.dangerButton}
-          />
-        </Card>
-
         {/* App Info */}
         <View style={styles.appInfo}>
           <Text style={[styles.appInfoText, { color: colors.textTertiary }]}>
@@ -623,6 +731,99 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: Spacing.md,
   },
+  profileCard: {
+    overflow: "hidden",
+  },
+  gradientCard: {
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+  },
+  avatarGradient: {
+    borderRadius: 28,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: Spacing.md,
+  },
+  cardHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  cardHeaderInfo: {
+    marginLeft: Spacing.md,
+    flex: 1,
+  },
+  cardTitle: {
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  cardSubtitle: {
+    fontSize: Typography.fontSize.sm,
+    marginTop: 2,
+  },
+  avatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarText: {
+    fontSize: Typography.fontSize["2xl"],
+    fontWeight: Typography.fontWeight.bold,
+    color: "#FFFFFF",
+  },
+  editIconButton: {
+    padding: Spacing.sm,
+  },
+  infoGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.md,
+    marginTop: Spacing.sm,
+  },
+  infoItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  infoText: {
+    fontSize: Typography.fontSize.sm,
+  },
+  medicalList: {
+    marginTop: Spacing.md,
+  },
+  medicalItem: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: Spacing.md,
+    paddingVertical: Spacing.md,
+  },
+  medicalIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  medicalItemContent: {
+    flex: 1,
+  },
+  medicalItemTitle: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.semibold,
+    marginBottom: Spacing.xs,
+  },
+  medicalItemValue: {
+    fontSize: Typography.fontSize.sm,
+    lineHeight: Typography.fontSize.sm * 1.5,
+  },
+  alertText: {
+    fontWeight: Typography.fontWeight.medium,
+  },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -640,41 +841,6 @@ const styles = StyleSheet.create({
   },
   addButton: {
     padding: Spacing.xs,
-  },
-  profileHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: Spacing.lg,
-  },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarText: {
-    fontSize: Typography.fontSize["3xl"],
-    fontWeight: Typography.fontWeight.bold,
-    color: "#FFFFFF",
-  },
-  profileInfo: {
-    marginLeft: Spacing.lg,
-    flex: 1,
-  },
-  profileName: {
-    fontSize: Typography.fontSize["2xl"],
-    fontWeight: Typography.fontWeight.bold,
-  },
-  profileDetail: {
-    fontSize: Typography.fontSize.base,
-    marginLeft: Spacing.xs,
-  },
-  detailRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: Spacing.xs,
-    gap: Spacing.xs,
   },
   emptyContainer: {
     alignItems: "center",
@@ -781,9 +947,6 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.sm,
     marginTop: 2,
   },
-  dangerButton: {
-    width: "100%",
-  },
   appInfo: {
     alignItems: "center",
     paddingVertical: Spacing.xl,
@@ -793,5 +956,3 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xs,
   },
 });
-
-

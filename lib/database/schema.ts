@@ -1,7 +1,7 @@
 import * as SQLite from "expo-sqlite";
 
 export const DATABASE_NAME = "medicine_tracker.db";
-export const DATABASE_VERSION = 2;
+export const DATABASE_VERSION = 3;
 
 export const createTables = async (db: SQLite.SQLiteDatabase) => {
   await db.execAsync(`
@@ -14,6 +14,12 @@ export const createTables = async (db: SQLite.SQLiteDatabase) => {
       name TEXT NOT NULL,
       email TEXT,
       phone TEXT,
+      date_of_birth TEXT,
+      gender TEXT,
+      address TEXT,
+      blood_type TEXT,
+      allergies TEXT,
+      medical_conditions TEXT,
       profile_image TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
@@ -229,8 +235,73 @@ export const migrations: Migration[] = [
         CREATE INDEX IF NOT EXISTS idx_medicines_user_id ON medicines(user_id);
         CREATE INDEX IF NOT EXISTS idx_medicines_is_active ON medicines(is_active);
       `);
-    }
-  }
+    },
+  },
+  {
+    version: 3,
+    up: async (db) => {
+      // Add new profile fields to users table
+      // Use separate statements to handle if some columns already exist
+      try {
+        await db.execAsync(`ALTER TABLE users ADD COLUMN date_of_birth TEXT;`);
+      } catch (e) {
+        console.log("date_of_birth column may already exist");
+      }
+
+      try {
+        await db.execAsync(`ALTER TABLE users ADD COLUMN gender TEXT;`);
+      } catch (e) {
+        console.log("gender column may already exist");
+      }
+
+      try {
+        await db.execAsync(`ALTER TABLE users ADD COLUMN address TEXT;`);
+      } catch (e) {
+        console.log("address column may already exist");
+      }
+
+      try {
+        await db.execAsync(`ALTER TABLE users ADD COLUMN blood_type TEXT;`);
+      } catch (e) {
+        console.log("blood_type column may already exist");
+      }
+
+      try {
+        await db.execAsync(`ALTER TABLE users ADD COLUMN allergies TEXT;`);
+      } catch (e) {
+        console.log("allergies column may already exist");
+      }
+
+      try {
+        await db.execAsync(
+          `ALTER TABLE users ADD COLUMN medical_conditions TEXT;`
+        );
+      } catch (e) {
+        console.log("medical_conditions column may already exist");
+      }
+    },
+    down: async (db) => {
+      // SQLite doesn't support DROP COLUMN directly
+      // We need to recreate the table without the new columns
+      await db.execAsync(`
+        CREATE TABLE IF NOT EXISTS users_new (
+          id TEXT PRIMARY KEY NOT NULL,
+          name TEXT NOT NULL,
+          email TEXT,
+          phone TEXT,
+          profile_image TEXT,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
+        INSERT INTO users_new (id, name, email, phone, profile_image, created_at, updated_at)
+        SELECT id, name, email, phone, profile_image, created_at, updated_at FROM users;
+
+        DROP TABLE users;
+        ALTER TABLE users_new RENAME TO users;
+      `);
+    },
+  },
 ];
 
 export const getCurrentVersion = async (
@@ -255,12 +326,24 @@ export const setVersion = async (
 
 export const runMigrations = async (db: SQLite.SQLiteDatabase) => {
   const currentVersion = await getCurrentVersion(db);
+  console.log(`Current database version: ${currentVersion}`);
 
+  let hasRunMigrations = false;
   for (const migration of migrations) {
     if (migration.version > currentVersion) {
       console.log(`Running migration to version ${migration.version}`);
       await migration.up(db);
       await setVersion(db, migration.version);
+      hasRunMigrations = true;
     }
   }
+
+  // If no migrations ran, ensure we're at the latest version
+  if (!hasRunMigrations && currentVersion < DATABASE_VERSION) {
+    console.log(`Setting database version to ${DATABASE_VERSION}`);
+    await setVersion(db, DATABASE_VERSION);
+  }
+
+  const finalVersion = await getCurrentVersion(db);
+  console.log(`Final database version: ${finalVersion}`);
 };

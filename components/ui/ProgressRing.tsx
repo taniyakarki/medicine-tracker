@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useMemo, memo } from "react";
 import { Animated, StyleSheet, Text, useColorScheme, View } from "react-native";
 import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop } from "react-native-svg";
 import { Colors, Shadows, Typography } from "../../constants/design";
@@ -14,7 +14,7 @@ interface ProgressRingProps {
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
-export const ProgressRing: React.FC<ProgressRingProps> = ({
+export const ProgressRing = memo<ProgressRingProps>(({
   progress,
   size = 120,
   strokeWidth = 12,
@@ -28,27 +28,30 @@ export const ProgressRing: React.FC<ProgressRingProps> = ({
   
   const animatedValue = useRef(new Animated.Value(0)).current;
 
-  const radius = (size - strokeWidth) / 2;
-  const circumference = radius * 2 * Math.PI;
+  const radius = useMemo(() => (size - strokeWidth) / 2, [size, strokeWidth]);
+  const circumference = useMemo(() => radius * 2 * Math.PI, [radius]);
 
   useEffect(() => {
     Animated.spring(animatedValue, {
       toValue: progress,
-      useNativeDriver: true,
+      useNativeDriver: true, // Already optimized with native driver
       tension: 40,
       friction: 10,
     }).start();
   }, [progress, animatedValue]);
 
-  const strokeDashoffset = circumference - (progress / 100) * circumference;
+  const strokeDashoffset = useMemo(
+    () => circumference - (progress / 100) * circumference,
+    [circumference, progress]
+  );
 
-  const getProgressColor = () => {
+  const progressColor = useMemo(() => {
     if (progress >= 80) return colors.success;
     if (progress >= 50) return colors.warning;
     return colors.danger;
-  };
+  }, [progress, colors]);
 
-  const getGradientColors = () => {
+  const gradientColors = useMemo(() => {
     if (progress >= 80) {
       // Green gradient for good progress
       return isDark 
@@ -65,9 +68,7 @@ export const ProgressRing: React.FC<ProgressRingProps> = ({
         ? ['#EF4444', '#F87171', '#FCA5A5']
         : ['#DC2626', '#EF4444', '#F87171'];
     }
-  };
-
-  const gradientColors = getGradientColors();
+  }, [progress, isDark]);
 
   return (
     <View style={[styles.container, { width: size, height: size }]}>
@@ -147,7 +148,13 @@ export const ProgressRing: React.FC<ProgressRingProps> = ({
       </View>
     </View>
   );
-};
+}, (prevProps, nextProps) => {
+  // Only re-render if progress or size changes significantly
+  return Math.round(prevProps.progress) === Math.round(nextProps.progress) &&
+         prevProps.size === nextProps.size &&
+         prevProps.showPercentage === nextProps.showPercentage &&
+         prevProps.showLabel === nextProps.showLabel;
+});
 
 const styles = StyleSheet.create({
   container: {

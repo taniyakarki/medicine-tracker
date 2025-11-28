@@ -132,14 +132,16 @@ export default function HistoryScreen() {
   // Load doses when date range changes
   useEffect(() => {
     loadDoses();
-  }, [loadDoses]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dateRangeType, startDate, endDate]);
 
   // Reload data when screen comes into focus
   useFocusEffect(
     useCallback(() => {
       refresh();
       loadDoses();
-    }, [refresh, loadDoses])
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
   );
 
   const handleRefresh = async () => {
