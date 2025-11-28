@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { router, useFocusEffect } from "expo-router";
+import { router, Stack, useFocusEffect } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
   Alert,
@@ -13,13 +13,11 @@ import {
   useColorScheme,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Card } from "../../../components/ui/Card";
 import { LoadingSpinner } from "../../../components/ui/LoadingSpinner";
 import {
   BorderRadius,
   Colors,
-  Gradients,
   Shadows,
   Spacing,
   Typography,
@@ -36,7 +34,6 @@ import {
 export default function ProfileScreen() {
   const colorScheme = useColorScheme();
   const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
-  const insets = useSafeAreaInsets();
 
   const [user, setUser] = useState<User | null>(null);
   const [emergencyContacts, setEmergencyContacts] = useState<
@@ -140,100 +137,128 @@ export default function ProfileScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <Stack.Screen
+        options={{
+          title: "Profile",
+          headerShown: true,
+        }}
+      />
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingTop: insets.top > 0 ? insets.top : Spacing.md },
-        ]}
+        contentContainerStyle={styles.scrollContent}
       >
-        {/* Profile Section */}
+        {/* Profile Section - Beautiful User Card */}
         <View style={[styles.section, styles.profileCard]}>
           <LinearGradient
             colors={
               colorScheme === "dark"
-                ? Gradients.dark.active
-                : Gradients.light.active
+                ? ["#1a1a2e", "#16213e", "#0f3460"]
+                : ["#667eea", "#764ba2", "#f093fb"]
             }
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={[styles.gradientCard, Shadows.md]}
           >
-            <View style={styles.cardHeader}>
-              <View style={styles.cardHeaderLeft}>
-                <View style={styles.avatarGradient}>
-                  <LinearGradient
-                    colors={["rgba(255,255,255,0.3)", "rgba(255,255,255,0.1)"]}
-                    style={styles.avatar}
-                  >
-                    <Text style={styles.avatarText}>
-                      {user?.name.charAt(0).toUpperCase() || "U"}
-                    </Text>
-                  </LinearGradient>
-                </View>
-                <View style={styles.cardHeaderInfo}>
-                  <Text style={[styles.cardTitle, { color: "#FFFFFF" }]}>
-                    {user?.name}
-                  </Text>
-                  {(user?.email || user?.phone) && (
-                    <Text
-                      style={[
-                        styles.cardSubtitle,
-                        { color: "rgba(255,255,255,0.8)" },
-                      ]}
-                    >
-                      {user?.email || user?.phone}
-                    </Text>
-                  )}
-                </View>
-              </View>
-              <TouchableOpacity
-                onPress={handleEditProfile}
-                style={styles.editIconButton}
-              >
-                <Ionicons name="create-outline" size={24} color="#FFFFFF" />
-              </TouchableOpacity>
-            </View>
+            {/* Decorative Background Elements */}
+            <View style={styles.decorativeCircle1} />
+            <View style={styles.decorativeCircle2} />
 
-            {/* Quick Info Grid */}
-            {(user?.date_of_birth || user?.gender) && (
-              <View style={styles.infoGrid}>
-                {user?.date_of_birth && (
-                  <View style={styles.infoItem}>
-                    <Ionicons
-                      name="calendar-outline"
-                      size={16}
-                      color="rgba(255,255,255,0.9)"
-                    />
-                    <Text
-                      style={[
-                        styles.infoText,
-                        { color: "rgba(255,255,255,0.9)" },
-                      ]}
+            <View style={styles.cardContent}>
+              {/* Avatar Section */}
+              <View style={styles.avatarSection}>
+                <View style={styles.avatarOuterRing}>
+                  <View style={styles.avatarMiddleRing}>
+                    <LinearGradient
+                      colors={
+                        colorScheme === "dark"
+                          ? ["#f093fb", "#f5576c", "#4facfe"]
+                          : ["#ffffff", "#f0f0f0"]
+                      }
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.avatar}
                     >
-                      {new Date(user.date_of_birth).toLocaleDateString()}
-                    </Text>
+                      <Text
+                        style={[
+                          styles.avatarText,
+                          {
+                            color:
+                              colorScheme === "dark" ? "#FFFFFF" : "#667eea",
+                          },
+                        ]}
+                      >
+                        {user?.name.charAt(0).toUpperCase() || "U"}
+                      </Text>
+                    </LinearGradient>
+                  </View>
+                </View>
+
+                {/* Edit Button - Floating */}
+                <TouchableOpacity
+                  onPress={handleEditProfile}
+                  style={[
+                    styles.editButton,
+                    {
+                      backgroundColor:
+                        colorScheme === "dark" ? "#f5576c" : "#FFFFFF",
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name="create"
+                    size={18}
+                    color={colorScheme === "dark" ? "#FFFFFF" : "#667eea"}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              {/* User Info */}
+              <View style={styles.userInfo}>
+                <Text style={styles.userName}>{user?.name || "User"}</Text>
+                {user?.email && (
+                  <View style={styles.emailContainer}>
+                    <Ionicons
+                      name="mail"
+                      size={16}
+                      color="rgba(255,255,255,0.85)"
+                    />
+                    <Text style={styles.userEmail}>{user.email}</Text>
                   </View>
                 )}
-                {user?.gender && (
-                  <View style={styles.infoItem}>
+                {!user?.email && user?.phone && (
+                  <View style={styles.emailContainer}>
                     <Ionicons
-                      name="person-outline"
+                      name="call"
                       size={16}
-                      color="rgba(255,255,255,0.9)"
+                      color="rgba(255,255,255,0.85)"
                     />
-                    <Text
-                      style={[
-                        styles.infoText,
-                        { color: "rgba(255,255,255,0.9)" },
-                      ]}
-                    >
-                      {user.gender}
-                    </Text>
+                    <Text style={styles.userEmail}>{user.phone}</Text>
                   </View>
                 )}
               </View>
-            )}
+
+              {/* Decorative Stats/Badges */}
+              <View style={styles.badgeContainer}>
+                <View
+                  style={[
+                    styles.badge,
+                    { backgroundColor: "rgba(255,255,255,0.2)" },
+                  ]}
+                >
+                  <Ionicons name="shield-checkmark" size={16} color="#FFFFFF" />
+                  <Text style={styles.badgeText}>Verified</Text>
+                </View>
+                <View
+                  style={[
+                    styles.badge,
+                    { backgroundColor: "rgba(255,255,255,0.2)" },
+                  ]}
+                >
+                  <Ionicons name="heart" size={16} color="#FFFFFF" />
+                  <Text style={styles.badgeText}>Health Tracker</Text>
+                </View>
+              </View>
+            </View>
           </LinearGradient>
         </View>
 
@@ -382,91 +407,96 @@ export default function ProfileScreen() {
                 style={[
                   styles.contactItem,
                   {
-                    borderBottomColor: colors.border,
-                    borderBottomWidth:
-                      index < emergencyContacts.length - 1 ? 1 : 0,
+                    backgroundColor: colors.surfaceSecondary,
+                    marginBottom:
+                      index < emergencyContacts.length - 1 ? Spacing.sm : 0,
                   },
                 ]}
                 onLongPress={() => handleDeleteEmergencyContact(contact)}
                 onPress={() => handleEditEmergencyContact(contact)}
               >
-                <View
-                  style={[
-                    styles.contactIconContainer,
-                    { backgroundColor: colors.danger + "15" },
-                  ]}
-                >
-                  <Ionicons name="person" size={24} color={colors.danger} />
+                <View style={styles.contactIconWrapper}>
+                  <View
+                    style={[
+                      styles.contactIconContainer,
+                      { backgroundColor: colors.danger + "20" },
+                    ]}
+                  >
+                    <Ionicons name="person" size={20} color={colors.danger} />
+                  </View>
+                  {contact.priority > 0 && (
+                    <View
+                      style={[
+                        styles.primaryBadgeIcon,
+                        { backgroundColor: colors.warning },
+                      ]}
+                    >
+                      <Ionicons name="star" size={12} color="#FFFFFF" />
+                    </View>
+                  )}
                 </View>
                 <View style={styles.contactInfo}>
-                  <View style={styles.contactNameRow}>
-                    <Text style={[styles.contactName, { color: colors.text }]}>
-                      {contact.name}
+                  <Text
+                    style={[styles.contactName, { color: colors.text }]}
+                    numberOfLines={1}
+                  >
+                    {contact.name}
+                  </Text>
+                  <View style={styles.contactDetailRow}>
+                    <Ionicons
+                      name="briefcase-outline"
+                      size={14}
+                      color={colors.textSecondary}
+                    />
+                    <Text
+                      style={[
+                        styles.contactDetail,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      {contact.relationship}
                     </Text>
-                    {contact.priority > 0 && (
-                      <View
-                        style={[
-                          styles.primaryBadge,
-                          { backgroundColor: colors.warning + "20" },
-                        ]}
-                      >
-                        <Ionicons
-                          name="star"
-                          size={12}
-                          color={colors.warning}
-                        />
-                        <Text
-                          style={[
-                            styles.primaryBadgeText,
-                            { color: colors.warning },
-                          ]}
-                        >
-                          Primary
-                        </Text>
-                      </View>
-                    )}
                   </View>
-                  <Text
-                    style={[
-                      styles.contactDetail,
-                      { color: colors.textSecondary },
-                    ]}
-                  >
-                    {contact.relationship}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.contactPhone,
-                      { color: colors.textSecondary },
-                    ]}
-                  >
-                    {contact.phone}
-                  </Text>
+                  <View style={styles.contactDetailRow}>
+                    <Ionicons
+                      name="call-outline"
+                      size={14}
+                      color={colors.textSecondary}
+                    />
+                    <Text
+                      style={[
+                        styles.contactPhone,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      {contact.phone}
+                    </Text>
+                  </View>
                 </View>
                 <View style={styles.contactActions}>
                   <TouchableOpacity
                     style={[
                       styles.contactAction,
-                      { backgroundColor: colors.success + "15" },
+                      { backgroundColor: colors.success + "20" },
                     ]}
                     onPress={(e) => {
                       e.stopPropagation();
                       handleCallContact(contact.phone);
                     }}
                   >
-                    <Ionicons name="call" size={20} color={colors.success} />
+                    <Ionicons name="call" size={18} color={colors.success} />
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[
                       styles.contactAction,
-                      { backgroundColor: colors.info + "15" },
+                      { backgroundColor: colors.info + "20" },
                     ]}
                     onPress={(e) => {
                       e.stopPropagation();
                       handleMessageContact(contact.phone);
                     }}
                   >
-                    <Ionicons name="chatbubble" size={20} color={colors.info} />
+                    <Ionicons name="chatbubble" size={18} color={colors.info} />
                   </TouchableOpacity>
                 </View>
               </TouchableOpacity>
@@ -703,6 +733,91 @@ export default function ProfileScreen() {
           </View>
         </Card>
 
+        {/* Support */}
+        <Card style={styles.section}>
+          <View style={styles.sectionTitleContainer}>
+            <Ionicons name="help-circle" size={24} color={colors.primary} />
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Support
+            </Text>
+          </View>
+
+          <View style={styles.settingsGroup}>
+            <TouchableOpacity
+              style={styles.settingItem}
+              onPress={() => router.push("/profile/report-bug")}
+            >
+              <View style={styles.settingLeft}>
+                <View
+                  style={[
+                    styles.settingIconContainer,
+                    { backgroundColor: colors.danger + "15" },
+                  ]}
+                >
+                  <Ionicons name="bug" size={20} color={colors.danger} />
+                </View>
+                <View style={styles.settingTextContainer}>
+                  <Text style={[styles.settingLabel, { color: colors.text }]}>
+                    Report a Bug
+                  </Text>
+                  <Text
+                    style={[
+                      styles.settingDescription,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    Let us know about issues
+                  </Text>
+                </View>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={colors.textSecondary}
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.settingItem}
+              onPress={() =>
+                Alert.alert(
+                  "Rate Us",
+                  "Enjoying the app? Please rate us on the App Store!"
+                )
+              }
+            >
+              <View style={styles.settingLeft}>
+                <View
+                  style={[
+                    styles.settingIconContainer,
+                    { backgroundColor: colors.warning + "15" },
+                  ]}
+                >
+                  <Ionicons name="star" size={20} color={colors.warning} />
+                </View>
+                <View style={styles.settingTextContainer}>
+                  <Text style={[styles.settingLabel, { color: colors.text }]}>
+                    Rate the App
+                  </Text>
+                  <Text
+                    style={[
+                      styles.settingDescription,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    Share your feedback
+                  </Text>
+                </View>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={colors.textSecondary}
+              />
+            </TouchableOpacity>
+          </View>
+        </Card>
+
         {/* App Info */}
         <View style={styles.appInfo}>
           <Text style={[styles.appInfoText, { color: colors.textTertiary }]}>
@@ -733,65 +848,129 @@ const styles = StyleSheet.create({
   },
   profileCard: {
     overflow: "hidden",
+    marginTop: Spacing.md,
   },
   gradientCard: {
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.xl,
+    position: "relative",
+    overflow: "hidden",
   },
-  avatarGradient: {
-    borderRadius: 28,
+  decorativeCircle1: {
+    position: "absolute",
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    top: -100,
+    right: -50,
   },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+  decorativeCircle2: {
+    position: "absolute",
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    bottom: -75,
+    left: -30,
+  },
+  cardContent: {
     alignItems: "center",
-    marginBottom: Spacing.md,
+    zIndex: 1,
   },
-  cardHeaderLeft: {
-    flexDirection: "row",
+  avatarSection: {
+    position: "relative",
+    marginBottom: Spacing.lg,
+  },
+  avatarOuterRing: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: "rgba(255,255,255,0.15)",
     alignItems: "center",
-    flex: 1,
+    justifyContent: "center",
+    ...Shadows.lg,
   },
-  cardHeaderInfo: {
-    marginLeft: Spacing.md,
-    flex: 1,
-  },
-  cardTitle: {
-    fontSize: Typography.fontSize.lg,
-    fontWeight: Typography.fontWeight.semibold,
-  },
-  cardSubtitle: {
-    fontSize: Typography.fontSize.sm,
-    marginTop: 2,
-  },
-  avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+  avatarMiddleRing: {
+    width: 108,
+    height: 108,
+    borderRadius: 54,
+    backgroundColor: "rgba(255,255,255,0.2)",
     alignItems: "center",
     justifyContent: "center",
   },
+  avatar: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    ...Shadows.md,
+  },
   avatarText: {
+    fontSize: 42,
+    fontWeight: Typography.fontWeight.bold,
+    letterSpacing: 1,
+  },
+  editButton: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    ...Shadows.lg,
+    borderWidth: 3,
+    borderColor: "rgba(255,255,255,0.3)",
+  },
+  userInfo: {
+    alignItems: "center",
+    marginBottom: Spacing.lg,
+  },
+  userName: {
     fontSize: Typography.fontSize["2xl"],
     fontWeight: Typography.fontWeight.bold,
     color: "#FFFFFF",
+    marginBottom: Spacing.sm,
+    textAlign: "center",
+    letterSpacing: 0.5,
   },
-  editIconButton: {
-    padding: Spacing.sm,
-  },
-  infoGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: Spacing.md,
-    marginTop: Spacing.sm,
-  },
-  infoItem: {
+  emailContainer: {
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.sm,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
   },
-  infoText: {
+  userEmail: {
+    fontSize: Typography.fontSize.base,
+    color: "rgba(255,255,255,0.95)",
+    fontWeight: Typography.fontWeight.medium,
+  },
+  badgeContainer: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+    flexWrap: "wrap",
+    justifyContent: "center",
+  },
+  badge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
+  },
+  badgeText: {
     fontSize: Typography.fontSize.sm,
+    color: "#FFFFFF",
+    fontWeight: Typography.fontWeight.medium,
   },
   medicalList: {
     marginTop: Spacing.md,
@@ -860,28 +1039,46 @@ const styles = StyleSheet.create({
   contactItem: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: Spacing.md,
+    padding: Spacing.md,
     gap: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    ...Shadows.sm,
+  },
+  contactIconWrapper: {
+    position: "relative",
   },
   contactIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: BorderRadius.md,
     alignItems: "center",
     justifyContent: "center",
   },
+  primaryBadgeIcon: {
+    position: "absolute",
+    top: -4,
+    right: -4,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+  },
   contactInfo: {
     flex: 1,
-  },
-  contactNameRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-    marginBottom: Spacing.xs,
+    gap: 6,
   },
   contactName: {
     fontSize: Typography.fontSize.base,
     fontWeight: Typography.fontWeight.semibold,
+    marginBottom: 4,
+  },
+  contactDetailRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
   primaryBadge: {
     flexDirection: "row",
@@ -897,7 +1094,6 @@ const styles = StyleSheet.create({
   },
   contactDetail: {
     fontSize: Typography.fontSize.sm,
-    marginBottom: 2,
   },
   contactPhone: {
     fontSize: Typography.fontSize.sm,
@@ -910,7 +1106,7 @@ const styles = StyleSheet.create({
   contactAction: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: BorderRadius.lg,
     alignItems: "center",
     justifyContent: "center",
   },

@@ -18,12 +18,12 @@ interface TimelineProps {
   showActions?: boolean;
 }
 
-export const Timeline = memo<TimelineProps>(({ 
+export const Timeline = memo<TimelineProps>(function Timeline({ 
   items, 
   onTakeDose, 
   onSkipDose, 
   showActions = false 
-}) => {
+}) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const colors = isDark ? Colors.dark : Colors.light;

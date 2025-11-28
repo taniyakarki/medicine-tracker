@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { router } from "expo-router";
+import { Stack, router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
@@ -14,7 +14,6 @@ import {
   useColorScheme,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "../../../components/ui/Button";
 import { LoadingSpinner } from "../../../components/ui/LoadingSpinner";
 import { Modal } from "../../../components/ui/Modal";
@@ -34,7 +33,6 @@ import { User } from "../../../types/database";
 export default function EditProfileScreen() {
   const colorScheme = useColorScheme();
   const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
-  const insets = useSafeAreaInsets();
 
   const [user, setUser] = useState<User | null>(null);
   const [name, setName] = useState("");
@@ -202,30 +200,21 @@ export default function EditProfileScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <Stack.Screen
+        options={{
+          title: "Edit Profile",
+          headerBackTitle: "Back",
+          headerTintColor: colors.primary,
+          headerStyle: {
+            backgroundColor: colors.background,
+          },
+          headerShadowVisible: false,
+        }}
+      />
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <View
-          style={[
-            styles.header,
-            {
-              paddingTop: insets.top > 0 ? insets.top : Spacing.md,
-              borderBottomColor: colors.border,
-            },
-          ]}
-        >
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.backButton}
-          >
-            <Ionicons name="arrow-back" size={24} color={colors.text} />
-          </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>
-            Edit Profile
-          </Text>
-          <View style={styles.placeholder} />
-        </View>
 
         <ScrollView
           style={styles.scrollView}
@@ -656,7 +645,6 @@ export default function EditProfileScreen() {
             {
               backgroundColor: colors.background,
               borderTopColor: colors.border,
-              paddingBottom: insets.bottom > 0 ? insets.bottom : Spacing.lg,
             },
           ]}
         >
@@ -762,24 +750,6 @@ const styles = StyleSheet.create({
   },
   keyboardView: {
     flex: 1,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.md,
-    paddingBottom: Spacing.md,
-    borderBottomWidth: 1,
-  },
-  backButton: {
-    padding: Spacing.sm,
-  },
-  headerTitle: {
-    fontSize: Typography.fontSize.xl,
-    fontWeight: Typography.fontWeight.semibold,
-  },
-  placeholder: {
-    width: 40,
   },
   scrollView: {
     flex: 1,
@@ -942,6 +912,7 @@ const styles = StyleSheet.create({
   footer: {
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.lg,
+    paddingBottom: Spacing.xl,
     borderTopWidth: 1,
   },
   saveButton: {

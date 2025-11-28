@@ -25,30 +25,11 @@ export default function ProfileLayout() {
         detachPreviousScreen: Platform.OS === "android",
       }}
     >
-      <Stack.Screen
-        name="index"
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="edit"
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="emergency-contacts/add"
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="emergency-contacts/edit/[id]"
-        options={{
-          headerShown: false,
-        }}
-      />
+      <Stack.Screen name="index" />
+      <Stack.Screen name="edit" />
+      <Stack.Screen name="emergency-contacts/add" />
+      <Stack.Screen name="emergency-contacts/edit/[id]" />
+      <Stack.Screen name="report-bug" />
     </Stack>
   );
 }

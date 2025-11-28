@@ -9,7 +9,6 @@ import {
   useColorScheme,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { EmptyState } from "../../components/ui/EmptyState";
@@ -33,7 +32,6 @@ interface GroupWithCount extends MedicineGroup {
 export default function GroupsScreen() {
   const colorScheme = useColorScheme();
   const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
-  const insets = useSafeAreaInsets();
 
   const [groups, setGroups] = useState<GroupWithCount[]>([]);
   const [loading, setLoading] = useState(true);

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useMemo, memo } from "react";
 import { Animated, StyleSheet, Text, useColorScheme, View } from "react-native";
 import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop } from "react-native-svg";
-import { Colors, Shadows, Typography } from "../../constants/design";
+import { /* Colors, */ Shadows, Typography } from "../../constants/design";
 
 interface ProgressRingProps {
   progress: number; // 0-100
@@ -12,19 +12,17 @@ interface ProgressRingProps {
   label?: string;
 }
 
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
-
-export const ProgressRing = memo<ProgressRingProps>(({
+export const ProgressRing = memo<ProgressRingProps>(function ProgressRing({
   progress,
   size = 120,
   strokeWidth = 12,
   showPercentage = true,
   showLabel = false,
   label = "Complete",
-}) => {
+}) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-  const colors = isDark ? Colors.dark : Colors.light;
+  // const colors = isDark ? Colors.dark : Colors.light;
   
   const animatedValue = useRef(new Animated.Value(0)).current;
 
@@ -45,11 +43,12 @@ export const ProgressRing = memo<ProgressRingProps>(({
     [circumference, progress]
   );
 
-  const progressColor = useMemo(() => {
-    if (progress >= 80) return colors.success;
-    if (progress >= 50) return colors.warning;
-    return colors.danger;
-  }, [progress, colors]);
+  // Unused but kept for potential future use
+  // const progressColor = useMemo(() => {
+  //   if (progress >= 80) return colors.success;
+  //   if (progress >= 50) return colors.warning;
+  //   return colors.danger;
+  // }, [progress, colors]);
 
   const gradientColors = useMemo(() => {
     if (progress >= 80) {

@@ -11,7 +11,10 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "UIBackgroundModes": ["fetch", "remote-notification"],
+        "UIBackgroundModes": [
+          "fetch",
+          "remote-notification"
+        ],
         "NSCameraUsageDescription": "This app uses the camera to take photos of medicines.",
         "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to select medicine images."
       }
@@ -26,15 +29,17 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "RECEIVE_BOOT_COMPLETED",
-        "VIBRATE",
-        "USE_FULL_SCREEN_INTENT",
-        "SCHEDULE_EXACT_ALARM",
-        "POST_NOTIFICATIONS"
-      ]
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE",
+        "android.permission.USE_FULL_SCREEN_INTENT",
+        "android.permission.SCHEDULE_EXACT_ALARM",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.aashish.distros.medicinetrack"
     },
     "web": {
       "output": "static",
@@ -60,7 +65,9 @@
         {
           "icon": "./assets/images/icon.png",
           "color": "#ffffff",
-          "sounds": ["./assets/sounds/notification.wav"]
+          "sounds": [
+            "./assets/sounds/notification.wav"
+          ]
         }
       ],
       [
@@ -74,6 +81,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "15048cee-62a8-4460-9f4c-e8046b660947"
+      }
     }
   }
 }

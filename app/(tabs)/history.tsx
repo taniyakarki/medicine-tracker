@@ -11,7 +11,6 @@ import {
   useColorScheme,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Card } from "../../components/ui/Card";
 import { DatePicker } from "../../components/ui/DatePicker";
 import { LoadingSpinner } from "../../components/ui/LoadingSpinner";
@@ -46,7 +45,6 @@ const dateRangeOptions: SelectOption[] = [
 export default function HistoryScreen() {
   const colorScheme = useColorScheme();
   const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
-  const insets = useSafeAreaInsets();
   const { stats, loading, refresh } = useMedicineStats();
   const [refreshing, setRefreshing] = useState(false);
 

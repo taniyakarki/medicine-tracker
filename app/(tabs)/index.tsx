@@ -11,7 +11,6 @@ import {
   useColorScheme,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Card } from "../../components/ui/Card";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { LoadingSpinner } from "../../components/ui/LoadingSpinner";
@@ -48,7 +47,6 @@ import { DoseWithMedicine } from "../../types/medicine";
 export default function HomeScreen() {
   const colorScheme = useColorScheme();
   const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
-  const insets = useSafeAreaInsets();
 
   const {
     stats,
@@ -517,65 +515,129 @@ export default function HomeScreen() {
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
               Recent Activity
             </Text>
-            {activity.map((dose) => (
-              <View key={dose.id} style={styles.activityItem}>
-                <View style={styles.activityLeft}>
-                  <View
-                    style={[
-                      styles.activityDot,
-                      {
-                        backgroundColor:
-                          dose.status === "taken"
-                            ? colors.success
-                            : dose.status === "missed"
-                            ? colors.danger
-                            : colors.warning,
-                      },
-                    ]}
-                  />
-                  <View style={styles.activityContent}>
-                    <Text
-                      style={[styles.activityTitle, { color: colors.text }]}
-                    >
-                      {dose.medicine.name}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.activityScheduled,
-                        { color: colors.textSecondary },
-                      ]}
-                    >
-                      Scheduled: {formatTime(new Date(dose.scheduled_time).toTimeString().slice(0, 5))}
-                    </Text>
-                    {dose.status !== "missed" && (
-                      <Text
-                        style={[
-                          styles.activityTime,
-                          { color: colors.textSecondary },
-                        ]}
-                      >
-                        {dose.taken_time
-                          ? `${dose.status === "taken" ? "Taken" : "Marked"}: ${formatDateTime(dose.taken_time)}`
-                          : formatDateTime(dose.scheduled_time)}
-                      </Text>
-                    )}
-                  </View>
-                </View>
-                <Text
+            {activity.map((dose, index) => (
+              <View
+                key={dose.id}
+                style={[
+                  styles.activityItem,
+                  {
+                    backgroundColor: colors.surfaceSecondary,
+                    marginBottom:
+                      index < activity.length - 1 ? Spacing.sm : 0,
+                  },
+                ]}
+              >
+                <View
                   style={[
-                    styles.activityStatus,
+                    styles.activityIconContainer,
                     {
-                      color:
+                      backgroundColor:
                         dose.status === "taken"
-                          ? colors.success
+                          ? colors.success + "20"
                           : dose.status === "missed"
-                          ? colors.danger
-                          : colors.warning,
+                          ? colors.danger + "20"
+                          : colors.warning + "20",
                     },
                   ]}
                 >
-                  {dose.status.charAt(0).toUpperCase() + dose.status.slice(1)}
-                </Text>
+                  <Ionicons
+                    name={
+                      dose.status === "taken"
+                        ? "checkmark-circle"
+                        : dose.status === "missed"
+                        ? "close-circle"
+                        : "time"
+                    }
+                    size={28}
+                    color={
+                      dose.status === "taken"
+                        ? colors.success
+                        : dose.status === "missed"
+                        ? colors.danger
+                        : colors.warning
+                    }
+                  />
+                </View>
+                <View style={styles.activityContent}>
+                  <View style={styles.activityHeader}>
+                    <Text
+                      style={[styles.activityTitle, { color: colors.text }]}
+                      numberOfLines={1}
+                    >
+                      {dose.medicine.name}
+                    </Text>
+                    <View
+                      style={[
+                        styles.activityStatusBadge,
+                        {
+                          backgroundColor:
+                            dose.status === "taken"
+                              ? colors.success + "20"
+                              : dose.status === "missed"
+                              ? colors.danger + "20"
+                              : colors.warning + "20",
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.activityStatusText,
+                          {
+                            color:
+                              dose.status === "taken"
+                                ? colors.success
+                                : dose.status === "missed"
+                                ? colors.danger
+                                : colors.warning,
+                          },
+                        ]}
+                      >
+                        {dose.status.charAt(0).toUpperCase() +
+                          dose.status.slice(1)}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.activityDetails}>
+                    <View style={styles.activityDetailRow}>
+                      <Ionicons
+                        name="time-outline"
+                        size={14}
+                        color={colors.textSecondary}
+                      />
+                      <Text
+                        style={[
+                          styles.activityDetailText,
+                          { color: colors.textSecondary },
+                        ]}
+                      >
+                        Scheduled:{" "}
+                        {formatTime(
+                          new Date(dose.scheduled_time)
+                            .toTimeString()
+                            .slice(0, 5)
+                        )}
+                      </Text>
+                    </View>
+                    {dose.status !== "missed" && dose.taken_time && (
+                      <View style={styles.activityDetailRow}>
+                        <Ionicons
+                          name="checkmark-done-outline"
+                          size={14}
+                          color={colors.textSecondary}
+                        />
+                        <Text
+                          style={[
+                            styles.activityDetailText,
+                            { color: colors.textSecondary },
+                          ]}
+                        >
+                          {dose.status === "taken" ? "Taken" : "Marked"}:{" "}
+                          {formatDateTime(dose.taken_time)}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
               </View>
             ))}
           </Card>
@@ -722,43 +784,55 @@ const styles = StyleSheet.create({
   },
   activityItem: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: Spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.light.border,
+    padding: Spacing.md,
+    gap: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    ...Shadows.sm,
   },
-  activityLeft: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    flex: 1,
-  },
-  activityDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: Spacing.md,
-    marginTop: 6,
+  activityIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: BorderRadius.xl,
+    alignItems: "center",
+    justifyContent: "center",
+    ...Shadows.sm,
   },
   activityContent: {
     flex: 1,
   },
+  activityHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: Spacing.xs,
+  },
   activityTitle: {
     fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.medium,
+    fontWeight: Typography.fontWeight.semibold,
+    flex: 1,
+    marginRight: Spacing.sm,
   },
-  activityScheduled: {
+  activityStatusBadge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.md,
+  },
+  activityStatusText: {
     fontSize: Typography.fontSize.xs,
-    marginTop: 2,
-    fontWeight: Typography.fontWeight.medium,
+    fontWeight: Typography.fontWeight.semibold,
+    textTransform: "uppercase",
   },
-  activityTime: {
+  activityDetails: {
+    gap: 4,
+  },
+  activityDetailRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  activityDetailText: {
     fontSize: Typography.fontSize.xs,
-    marginTop: 2,
-  },
-  activityStatus: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.medium,
   },
   badge: {
     paddingHorizontal: Spacing.sm,

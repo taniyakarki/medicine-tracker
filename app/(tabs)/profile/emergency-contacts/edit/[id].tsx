@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router, useLocalSearchParams } from "expo-router";
+import { Stack, router, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
@@ -10,11 +10,9 @@ import {
   Switch,
   Text,
   TextInput,
-  TouchableOpacity,
   useColorScheme,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "../../../../../components/ui/Button";
 import { LoadingSpinner } from "../../../../../components/ui/LoadingSpinner";
 import { Select, SelectOption } from "../../../../../components/ui/Select";
@@ -43,7 +41,6 @@ export default function EditEmergencyContactScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const colorScheme = useColorScheme();
   const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
-  const insets = useSafeAreaInsets();
 
   const [contact, setContact] = useState<EmergencyContact | null>(null);
   const [name, setName] = useState("");
@@ -148,35 +145,25 @@ export default function EditEmergencyContactScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <Stack.Screen
+        options={{
+          title: "Edit Emergency Contact",
+          headerBackTitle: "Back",
+          headerTintColor: colors.primary,
+          headerStyle: {
+            backgroundColor: colors.background,
+          },
+          headerShadowVisible: false,
+        }}
+      />
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <View
-          style={[
-            styles.header,
-            {
-              paddingTop: insets.top > 0 ? insets.top : Spacing.md,
-              borderBottomColor: colors.border,
-            },
-          ]}
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
         >
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.backButton}
-          >
-            <Ionicons name="arrow-back" size={24} color={colors.text} />
-          </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>
-            Edit Emergency Contact
-          </Text>
-          <View style={styles.placeholder} />
-        </View>
-
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-      >
         <View style={styles.form}>
           {/* Name Field */}
           <View style={styles.fieldContainer}>
@@ -352,7 +339,6 @@ export default function EditEmergencyContactScreen() {
           {
             backgroundColor: colors.background,
             borderTopColor: colors.border,
-            paddingBottom: insets.bottom > 0 ? insets.bottom : Spacing.lg,
           },
         ]}
       >
@@ -374,24 +360,6 @@ const styles = StyleSheet.create({
   },
   keyboardView: {
     flex: 1,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.md,
-    paddingBottom: Spacing.md,
-    borderBottomWidth: 1,
-  },
-  backButton: {
-    padding: Spacing.sm,
-  },
-  headerTitle: {
-    fontSize: Typography.fontSize.xl,
-    fontWeight: Typography.fontWeight.semibold,
-  },
-  placeholder: {
-    width: 40,
   },
   scrollView: {
     flex: 1,
@@ -454,6 +422,7 @@ const styles = StyleSheet.create({
   footer: {
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.lg,
+    paddingBottom: Spacing.xl,
     borderTopWidth: 1,
   },
   saveButton: {

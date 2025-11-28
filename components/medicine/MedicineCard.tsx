@@ -11,7 +11,7 @@ interface MedicineCardProps {
   medicine: MedicineWithNextDose;
 }
 
-export const MedicineCard = memo<MedicineCardProps>(({ medicine }) => {
+export const MedicineCard = memo<MedicineCardProps>(function MedicineCard({ medicine }) {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';

@@ -56,7 +56,7 @@ export const DoseHistoryList: React.FC<DoseHistoryListProps> = ({
     }
   };
 
-  const getStatusColor = (status: DoseStatus) => {
+  const getStatusColor = useCallback((status: DoseStatus) => {
     switch (status) {
       case "taken":
         return colors.success;
@@ -69,7 +69,7 @@ export const DoseHistoryList: React.FC<DoseHistoryListProps> = ({
       default:
         return colors.textSecondary;
     }
-  };
+  }, [colors]);
 
   const getStatusLabel = (status: DoseStatus) => {
     return status.charAt(0).toUpperCase() + status.slice(1);
@@ -286,7 +286,7 @@ export const DoseHistoryList: React.FC<DoseHistoryListProps> = ({
         )}
       </Card>
     );
-  }, [showMedicineName, colors]);
+  }, [showMedicineName, colors, getStatusColor]);
 
   const keyExtractor = useCallback((item: DoseWithMedicine) => item.id, []);
 
