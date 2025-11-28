@@ -17,12 +17,27 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "../../../../../components/ui/Button";
 import { LoadingSpinner } from "../../../../../components/ui/LoadingSpinner";
+import { Select, SelectOption } from "../../../../../components/ui/Select";
 import { Colors, Spacing, Typography } from "../../../../../constants/design";
 import {
   getEmergencyContactById,
   updateEmergencyContact,
 } from "../../../../../lib/database/models/emergency-contact";
 import { EmergencyContact } from "../../../../../types/database";
+
+const relationshipOptions: SelectOption[] = [
+  { label: "Spouse", value: "Spouse" },
+  { label: "Parent", value: "Parent" },
+  { label: "Child", value: "Child" },
+  { label: "Sibling", value: "Sibling" },
+  { label: "Partner", value: "Partner" },
+  { label: "Friend", value: "Friend" },
+  { label: "Relative", value: "Relative" },
+  { label: "Neighbor", value: "Neighbor" },
+  { label: "Caregiver", value: "Caregiver" },
+  { label: "Doctor", value: "Doctor" },
+  { label: "Other", value: "Other" },
+];
 
 export default function EditEmergencyContactScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -205,47 +220,20 @@ export default function EditEmergencyContactScreen() {
           </View>
 
           {/* Relationship Field */}
-          <View style={styles.fieldContainer}>
-            <Text style={[styles.label, { color: colors.text }]}>
-              Relationship <Text style={styles.required}>*</Text>
-            </Text>
-            <View
-              style={[
-                styles.inputContainer,
-                {
-                  backgroundColor: colors.surface,
-                  borderColor: errors.relationship
-                    ? colors.danger
-                    : colors.border,
-                },
-              ]}
-            >
-              <Ionicons
-                name="people-outline"
-                size={20}
-                color={colors.textSecondary}
-                style={styles.inputIcon}
-              />
-              <TextInput
-                style={[styles.input, { color: colors.text }]}
-                value={relationship}
-                onChangeText={(text) => {
-                  setRelationship(text);
-                  if (errors.relationship) {
-                    setErrors({ ...errors, relationship: undefined });
-                  }
-                }}
-                placeholder="e.g., Spouse, Parent, Friend"
-                placeholderTextColor={colors.textTertiary}
-                autoCapitalize="words"
-              />
-            </View>
-            {errors.relationship && (
-              <Text style={[styles.errorText, { color: colors.danger }]}>
-                {errors.relationship}
-              </Text>
-            )}
-          </View>
+          <Select
+            label="Relationship"
+            value={relationship}
+            options={relationshipOptions}
+            onSelect={(value) => {
+              setRelationship(value);
+              if (errors.relationship) {
+                setErrors({ ...errors, relationship: undefined });
+              }
+            }}
+            placeholder="Select relationship"
+            error={errors.relationship}
+            required
+          />
 
           {/* Phone Field */}
           <View style={styles.fieldContainer}>

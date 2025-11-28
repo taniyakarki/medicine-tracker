@@ -60,8 +60,14 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   };
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
+    // On Android, the picker closes automatically, so we handle it here
     if (Platform.OS === 'android') {
       setShowPicker(false);
+      
+      // If user cancelled (selectedDate is undefined on cancel)
+      if (event.type === 'dismissed') {
+        return;
+      }
     }
 
     if (selectedDate) {
@@ -74,12 +80,6 @@ export const DatePicker: React.FC<DatePickerProps> = ({
       const formattedDate = `${year}-${month}-${day}`;
       
       onChange(formattedDate);
-      
-      if (Platform.OS === 'android') {
-        setShowPicker(false);
-      }
-    } else if (Platform.OS === 'android') {
-      setShowPicker(false);
     }
   };
 

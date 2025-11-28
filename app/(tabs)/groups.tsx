@@ -95,10 +95,7 @@ export default function GroupsScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingTop: insets.top > 0 ? insets.top : Spacing.md },
-        ]}
+        contentContainerStyle={styles.scrollContent}
       >
         {/* Info Card */}
         <Card style={styles.infoCard}>
@@ -286,7 +283,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: Spacing.md,
+    padding: Spacing.md,
     paddingBottom: 100,
   },
   infoCard: {

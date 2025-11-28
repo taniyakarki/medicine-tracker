@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   Image,
@@ -28,7 +28,7 @@ export default function MedicineDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const colorScheme = useColorScheme();
   const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
-  const { medicine, loading } = useMedicine(id);
+  const { medicine, loading, refresh: refreshMedicine } = useMedicine(id);
 
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [doses, setDoses] = useState<DoseWithMedicine[]>([]);
@@ -41,6 +41,16 @@ export default function MedicineDetailScreen() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  // Refresh data when screen comes into focus (e.g., after editing)
+  useFocusEffect(
+    useCallback(() => {
+      if (id) {
+        refreshMedicine();
+        loadSchedulesAndDoses();
+      }
+    }, [id, refreshMedicine])
+  );
 
   const loadSchedulesAndDoses = async () => {
     try {
@@ -134,6 +144,137 @@ export default function MedicineDetailScreen() {
     }
   };
 
+  const getNextScheduledDose = () => {
+    if (!schedules || schedules.length === 0) return null;
+
+    const now = new Date();
+    const currentDay = now.getDay(); // 0 = Sunday, 6 = Saturday
+    const currentTime = now.getHours() * 60 + now.getMinutes(); // Minutes since midnight
+
+    let nextDose: { time: string; date: Date } | null = null;
+    let minDiff = Infinity;
+
+    // Check each schedule
+    for (const schedule of schedules) {
+      if (schedule.interval_hours) {
+        // For interval-based schedules, find the next occurrence
+        // This is complex, so we'll just show "Every X hours" for now
+        continue;
+      }
+
+      if (schedule.days_of_week) {
+        // For specific days schedules
+        try {
+          const days = JSON.parse(schedule.days_of_week) as number[];
+          const [hours, minutes] = schedule.time.split(":").map(Number);
+          const scheduleTime = hours * 60 + minutes;
+
+          // Check today first
+          if (days.includes(currentDay) && scheduleTime > currentTime) {
+            const diff = scheduleTime - currentTime;
+            if (diff < minDiff) {
+              minDiff = diff;
+              const nextDate = new Date(now);
+              nextDate.setHours(hours, minutes, 0, 0);
+              nextDose = { time: schedule.time, date: nextDate };
+            }
+          }
+
+          // Check upcoming days (next 7 days)
+          for (let i = 1; i <= 7; i++) {
+            const checkDay = (currentDay + i) % 7;
+            if (days.includes(checkDay)) {
+              const daysUntil = i;
+              const diff = daysUntil * 24 * 60 + (scheduleTime - currentTime);
+              if (diff < minDiff) {
+                minDiff = diff;
+                const nextDate = new Date(now);
+                nextDate.setDate(nextDate.getDate() + daysUntil);
+                nextDate.setHours(hours, minutes, 0, 0);
+                nextDose = { time: schedule.time, date: nextDate };
+              }
+              break; // Found the next occurrence for this schedule
+            }
+          }
+        } catch (error) {
+          console.error("Error parsing days_of_week:", error);
+        }
+      } else {
+        // Daily schedule
+        const [hours, minutes] = schedule.time.split(":").map(Number);
+        const scheduleTime = hours * 60 + minutes;
+
+        if (scheduleTime > currentTime) {
+          // Today
+          const diff = scheduleTime - currentTime;
+          if (diff < minDiff) {
+            minDiff = diff;
+            const nextDate = new Date(now);
+            nextDate.setHours(hours, minutes, 0, 0);
+            nextDose = { time: schedule.time, date: nextDate };
+          }
+        } else {
+          // Tomorrow
+          const diff = 24 * 60 - currentTime + scheduleTime;
+          if (diff < minDiff) {
+            minDiff = diff;
+            const nextDate = new Date(now);
+            nextDate.setDate(nextDate.getDate() + 1);
+            nextDate.setHours(hours, minutes, 0, 0);
+            nextDose = { time: schedule.time, date: nextDate };
+          }
+        }
+      }
+    }
+
+    return nextDose;
+  };
+
+  const formatNextDoseTime = (
+    nextDose: { time: string; date: Date } | null
+  ) => {
+    if (!nextDose) return null;
+
+    const now = new Date();
+    const diff = nextDose.date.getTime() - now.getTime();
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+    const isToday = nextDose.date.toDateString() === now.toDateString();
+    const isTomorrow =
+      nextDose.date.toDateString() ===
+      new Date(now.getTime() + 24 * 60 * 60 * 1000).toDateString();
+
+    let dateStr = "";
+    if (isToday) {
+      dateStr = "Today";
+    } else if (isTomorrow) {
+      dateStr = "Tomorrow";
+    } else {
+      dateStr = nextDose.date.toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+      });
+    }
+
+    let timeUntil = "";
+    if (hours > 0) {
+      timeUntil = `in ${hours}h ${minutes}m`;
+    } else {
+      timeUntil = `in ${minutes}m`;
+    }
+
+    return {
+      dateStr,
+      timeStr: formatTimeWithAMPM(nextDose.time),
+      timeUntil,
+    };
+  };
+
+  const nextDose = getNextScheduledDose();
+  const nextDoseFormatted = formatNextDoseTime(nextDose);
+
   if (loading || !medicine) {
     return <LoadingSpinner fullScreen />;
   }
@@ -184,6 +325,38 @@ export default function MedicineDetailScreen() {
             </View>
           </View>
         </Card>
+
+        {/* Next Scheduled Dose */}
+        {nextDoseFormatted && (
+          <Card style={styles.nextDoseCard}>
+            <View style={styles.nextDoseHeader}>
+              <Ionicons name="alarm" size={24} color={colors.primary} />
+              <Text style={[styles.nextDoseTitle, { color: colors.text }]}>
+                Next Dose
+              </Text>
+            </View>
+            <View style={styles.nextDoseContent}>
+              <Text style={[styles.nextDoseDate, { color: colors.text }]}>
+                {nextDoseFormatted.dateStr}
+              </Text>
+              <Text style={[styles.nextDoseTime, { color: colors.primary }]}>
+                {nextDoseFormatted.timeStr}
+              </Text>
+              <View
+                style={[
+                  styles.nextDoseBadge,
+                  { backgroundColor: `${colors.primary}15` },
+                ]}
+              >
+                <Text
+                  style={[styles.nextDoseTimeUntil, { color: colors.primary }]}
+                >
+                  {nextDoseFormatted.timeUntil}
+                </Text>
+              </View>
+            </View>
+          </Card>
+        )}
 
         <Card style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
@@ -537,6 +710,43 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: Spacing.md,
+  },
+  nextDoseCard: {
+    marginBottom: Spacing.md,
+    borderLeftWidth: 4,
+    borderLeftColor: Colors.light.primary,
+  },
+  nextDoseHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  nextDoseTitle: {
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  nextDoseContent: {
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  nextDoseDate: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  nextDoseTime: {
+    fontSize: Typography.fontSize["3xl"],
+    fontWeight: Typography.fontWeight.bold,
+  },
+  nextDoseBadge: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: 20,
+    marginTop: Spacing.xs,
+  },
+  nextDoseTimeUntil: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
   },
   sectionTitle: {
     fontSize: Typography.fontSize.lg,

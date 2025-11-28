@@ -229,6 +229,26 @@ export const Animation = {
   },
 };
 
+// Gradient definitions for cards
+export const Gradients = {
+  light: {
+    // Multicolor gradient: Purple → Blue → Cyan → Teal (vibrant and eye-catching)
+    progress: ['#8B5CF6', '#6366F1', '#3B82F6', '#06B6D4', '#14B8A6'],
+    // Single color gradients with good contrast
+    streak: ['#F59E0B', '#FB923C'], // Amber gradient (darker to lighter)
+    adherence: ['#10B981', '#34D399'], // Green gradient (darker to lighter)
+    active: ['#6366F1', '#818CF8'], // Indigo gradient (darker to lighter)
+  },
+  dark: {
+    // Multicolor gradient: Deep Purple → Deep Blue → Deep Cyan (rich and sophisticated)
+    progress: ['#6B21A8', '#4338CA', '#1E40AF', '#0E7490', '#0F766E'],
+    // Single color gradients with good contrast for dark mode
+    streak: ['#92400E', '#C2410C'], // Dark amber gradient
+    adherence: ['#065F46', '#047857'], // Dark green gradient
+    active: ['#4338CA', '#4F46E5'], // Dark indigo gradient
+  },
+};
+
 // Helper function to get medicine type color
 export const getMedicineTypeColor = (type: string, isDark: boolean = false) => {
   const colors = isDark ? Colors.dark : Colors.light;

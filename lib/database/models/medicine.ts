@@ -99,36 +99,129 @@ export const searchMedicines = async (
 export const getActiveMedicinesWithNextDose = async (
   userId: string
 ): Promise<MedicineWithNextDose[]> => {
-  const now = getCurrentTimestamp();
+  // Get all active medicines
+  const medicines = await getActiveMedicines(userId);
 
-  const medicines = await executeQuery<MedicineWithNextDose>(
-    `SELECT 
-      m.*,
-      (
-        SELECT json_object(
-          'schedule_id', s.id,
-          'scheduled_time', d.scheduled_time,
-          'time', s.time
-        )
-        FROM schedules s
-        JOIN doses d ON d.schedule_id = s.id
-        WHERE s.medicine_id = m.id 
-          AND s.is_active = 1
-          AND d.scheduled_time >= ?
-          AND d.status = 'scheduled'
-        ORDER BY d.scheduled_time ASC
-        LIMIT 1
-      ) as nextDose
-     FROM ${TABLE_NAME} m
-     WHERE m.user_id = ? AND m.is_active = 1
-     ORDER BY m.name ASC`,
-    [now, userId]
+  // For each medicine, calculate the next dose based on schedules
+  const medicinesWithNextDose = await Promise.all(
+    medicines.map(async (medicine) => {
+      const schedules = await getSchedulesByMedicineId(medicine.id);
+      const nextDose = calculateNextDose(schedules);
+
+      return {
+        ...medicine,
+        nextDose,
+      };
+    })
   );
 
-  return medicines.map((m) => ({
-    ...m,
-    nextDose: m.nextDose ? JSON.parse(m.nextDose as any) : undefined,
-  }));
+  return medicinesWithNextDose;
+};
+
+// Helper function to calculate next dose from schedules
+const calculateNextDose = (
+  schedules: any[]
+): { schedule_id: string; scheduled_time: string; time: string } | undefined => {
+  if (!schedules || schedules.length === 0) return undefined;
+
+  const now = new Date();
+  const currentDay = now.getDay(); // 0 = Sunday, 6 = Saturday
+  const currentTime = now.getHours() * 60 + now.getMinutes(); // Minutes since midnight
+
+  let nextDose: { schedule_id: string; scheduled_time: string; time: string } | undefined;
+  let minDiff = Infinity;
+
+  // Check each schedule
+  for (const schedule of schedules) {
+    if (!schedule.is_active) continue;
+
+    if (schedule.interval_hours) {
+      // For interval-based schedules, skip for now (complex logic)
+      continue;
+    }
+
+    if (schedule.days_of_week) {
+      // For specific days schedules
+      try {
+        const days = JSON.parse(schedule.days_of_week) as number[];
+        const [hours, minutes] = schedule.time.split(":").map(Number);
+        const scheduleTime = hours * 60 + minutes;
+
+        // Check today first
+        if (days.includes(currentDay) && scheduleTime > currentTime) {
+          const diff = scheduleTime - currentTime;
+          if (diff < minDiff) {
+            minDiff = diff;
+            const nextDate = new Date(now);
+            nextDate.setHours(hours, minutes, 0, 0);
+            nextDose = {
+              schedule_id: schedule.id,
+              scheduled_time: nextDate.toISOString(),
+              time: schedule.time,
+            };
+          }
+        }
+
+        // Check upcoming days (next 7 days)
+        for (let i = 1; i <= 7; i++) {
+          const checkDay = (currentDay + i) % 7;
+          if (days.includes(checkDay)) {
+            const daysUntil = i;
+            const diff = daysUntil * 24 * 60 + (scheduleTime - currentTime);
+            if (diff < minDiff) {
+              minDiff = diff;
+              const nextDate = new Date(now);
+              nextDate.setDate(nextDate.getDate() + daysUntil);
+              nextDate.setHours(hours, minutes, 0, 0);
+              nextDose = {
+                schedule_id: schedule.id,
+                scheduled_time: nextDate.toISOString(),
+                time: schedule.time,
+              };
+            }
+            break; // Found the next occurrence for this schedule
+          }
+        }
+      } catch (error) {
+        console.error("Error parsing days_of_week:", error);
+      }
+    } else {
+      // Daily schedule
+      const [hours, minutes] = schedule.time.split(":").map(Number);
+      const scheduleTime = hours * 60 + minutes;
+
+      if (scheduleTime > currentTime) {
+        // Today
+        const diff = scheduleTime - currentTime;
+        if (diff < minDiff) {
+          minDiff = diff;
+          const nextDate = new Date(now);
+          nextDate.setHours(hours, minutes, 0, 0);
+          nextDose = {
+            schedule_id: schedule.id,
+            scheduled_time: nextDate.toISOString(),
+            time: schedule.time,
+          };
+        }
+      } else {
+        // Tomorrow
+        const diff = 24 * 60 - currentTime + scheduleTime;
+        if (diff < minDiff) {
+          minDiff = diff;
+          const nextDate = new Date(now);
+          nextDate.setDate(nextDate.getDate() + 1);
+          nextDate.setHours(hours, minutes, 0, 0);
+          nextDose = {
+            schedule_id: schedule.id,
+            scheduled_time: nextDate.toISOString(),
+            time: schedule.time,
+          };
+        }
+      }
+    }
+  }
+
+  return nextDose;
 };
 
 export const deactivateMedicine = async (id: string): Promise<void> => {

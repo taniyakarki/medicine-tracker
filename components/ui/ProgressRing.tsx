@@ -1,27 +1,45 @@
-import React from "react";
-import { StyleSheet, Text, useColorScheme, View } from "react-native";
-import Svg, { Circle } from "react-native-svg";
-import { Colors, Typography } from "../../constants/design";
+import React, { useEffect, useRef } from "react";
+import { Animated, StyleSheet, Text, useColorScheme, View } from "react-native";
+import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop } from "react-native-svg";
+import { Colors, Shadows, Typography } from "../../constants/design";
 
 interface ProgressRingProps {
   progress: number; // 0-100
   size?: number;
   strokeWidth?: number;
   showPercentage?: boolean;
+  showLabel?: boolean;
+  label?: string;
 }
+
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 export const ProgressRing: React.FC<ProgressRingProps> = ({
   progress,
   size = 120,
-  strokeWidth = 10,
+  strokeWidth = 12,
   showPercentage = true,
+  showLabel = false,
+  label = "Complete",
 }) => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const colors = isDark ? Colors.dark : Colors.light;
+  
+  const animatedValue = useRef(new Animated.Value(0)).current;
 
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
+
+  useEffect(() => {
+    Animated.spring(animatedValue, {
+      toValue: progress,
+      useNativeDriver: true,
+      tension: 40,
+      friction: 10,
+    }).start();
+  }, [progress, animatedValue]);
+
   const strokeDashoffset = circumference - (progress / 100) * circumference;
 
   const getProgressColor = () => {
@@ -30,39 +48,103 @@ export const ProgressRing: React.FC<ProgressRingProps> = ({
     return colors.danger;
   };
 
+  const getGradientColors = () => {
+    if (progress >= 80) {
+      // Green gradient for good progress
+      return isDark 
+        ? ['#10B981', '#34D399', '#6EE7B7']
+        : ['#059669', '#10B981', '#34D399'];
+    } else if (progress >= 50) {
+      // Amber gradient for moderate progress
+      return isDark
+        ? ['#F59E0B', '#FBBF24', '#FCD34D']
+        : ['#D97706', '#F59E0B', '#FBBF24'];
+    } else {
+      // Red gradient for low progress
+      return isDark
+        ? ['#EF4444', '#F87171', '#FCA5A5']
+        : ['#DC2626', '#EF4444', '#F87171'];
+    }
+  };
+
+  const gradientColors = getGradientColors();
+
   return (
     <View style={[styles.container, { width: size, height: size }]}>
-      <Svg width={size} height={size}>
-        {/* Background circle */}
-        <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke={colors.border}
-          strokeWidth={strokeWidth}
-          fill="none"
-        />
-        {/* Progress circle */}
-        <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke={getProgressColor()}
-          strokeWidth={strokeWidth}
-          fill="none"
-          strokeDasharray={circumference}
-          strokeDashoffset={strokeDashoffset}
-          strokeLinecap="round"
-          transform={`rotate(-90 ${size / 2} ${size / 2})`}
-        />
-      </Svg>
-      {showPercentage && (
-        <View style={styles.textContainer}>
-          <Text style={[styles.percentage, { color: colors.text }]}>
-            {Math.round(progress)}%
-          </Text>
+      {/* Outer glow container */}
+      <View style={[
+        styles.glowContainer,
+        {
+          width: size + 20,
+          height: size + 20,
+          borderRadius: (size + 20) / 2,
+          backgroundColor: isDark 
+            ? 'rgba(255, 255, 255, 0.05)' 
+            : 'rgba(255, 255, 255, 0.3)',
+          ...Shadows.md,
+        }
+      ]}>
+        {/* Inner white background */}
+        <View style={[
+          styles.innerCircle,
+          {
+            width: size,
+            height: size,
+            borderRadius: size / 2,
+            backgroundColor: isDark 
+              ? 'rgba(255, 255, 255, 0.1)' 
+              : 'rgba(255, 255, 255, 0.5)',
+          }
+        ]}>
+          <Svg width={size} height={size}>
+            <Defs>
+              <SvgLinearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <Stop offset="0%" stopColor={gradientColors[0]} stopOpacity="1" />
+                <Stop offset="50%" stopColor={gradientColors[1]} stopOpacity="1" />
+                <Stop offset="100%" stopColor={gradientColors[2]} stopOpacity="1" />
+              </SvgLinearGradient>
+            </Defs>
+            
+            {/* Background circle with subtle color */}
+            <Circle
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              stroke={isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.5)'}
+              strokeWidth={strokeWidth}
+              fill="none"
+            />
+            
+            {/* Progress circle with gradient */}
+            <Circle
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              stroke="url(#progressGradient)"
+              strokeWidth={strokeWidth}
+              fill="none"
+              strokeDasharray={circumference}
+              strokeDashoffset={strokeDashoffset}
+              strokeLinecap="round"
+              transform={`rotate(-90 ${size / 2} ${size / 2})`}
+            />
+          </Svg>
+          
+          {/* Center content */}
+          {showPercentage && (
+            <View style={styles.textContainer}>
+              <Text style={[styles.percentage, { color: '#FFFFFF' }]}>
+                {Math.round(progress)}%
+              </Text>
+              {showLabel && (
+                <Text style={[styles.label, { color: 'rgba(255, 255, 255, 0.9)' }]}>
+                  {label}
+                </Text>
+              )}
+            </View>
+          )}
         </View>
-      )}
+      </View>
     </View>
   );
 };
@@ -73,13 +155,31 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  glowContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  innerCircle: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
   textContainer: {
     position: "absolute",
     alignItems: "center",
     justifyContent: "center",
   },
   percentage: {
-    fontSize: Typography.fontSize["2xl"],
+    fontSize: Typography.fontSize["3xl"],
     fontWeight: Typography.fontWeight.bold,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  label: {
+    fontSize: Typography.fontSize.xs,
+    fontWeight: Typography.fontWeight.medium,
+    marginTop: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 });

@@ -186,18 +186,21 @@ export default function EditMedicineScreen() {
 
     setSaving(true);
     try {
-      await updateMedicine(id, {
+      // Prepare update data - explicitly handle empty strings
+      const updateData: any = {
         name: formData.name,
-        type: formData.type as any,
+        type: formData.type,
         dosage: formData.dosage,
         unit: formData.unit,
-        frequency: formData.frequency as any,
+        frequency: formData.frequency,
         start_date: formData.start_date,
-        end_date: formData.end_date || undefined,
-        notes: formData.notes || undefined,
-        image: formData.image || undefined,
-        color: formData.color || undefined,
-      });
+        end_date: formData.end_date || null, // Use null instead of undefined for clearing
+        notes: formData.notes || null,
+        image: formData.image || null,
+        color: formData.color || null,
+      };
+
+      await updateMedicine(id, updateData);
 
       // Update schedules - delete old ones and create new ones
       await deleteSchedulesByMedicineId(id);

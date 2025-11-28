@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
@@ -19,6 +20,8 @@ import { Timeline, TimelineItem } from "../../components/ui/Timeline";
 import {
   BorderRadius,
   Colors,
+  Gradients,
+  Shadows,
   Spacing,
   Typography,
 } from "../../constants/design";
@@ -183,10 +186,7 @@ export default function HomeScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingTop: insets.top > 0 ? insets.top : Spacing.md },
-        ]}
+        contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -196,192 +196,263 @@ export default function HomeScreen() {
         }
       >
         {/* Progress Section */}
-        <Card style={styles.progressCard}>
-          <View style={styles.progressHeader}>
-            <View>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                Today&apos;s Progress
-              </Text>
+        <View style={styles.progressCard}>
+          <LinearGradient
+            colors={
+              colorScheme === "dark"
+                ? Gradients.dark.progress
+                : Gradients.light.progress
+            }
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1.2 }}
+            locations={[0, 0.25, 0.5, 0.75, 1]}
+            style={styles.gradientCard}
+          >
+            <View style={styles.progressHeader}>
+              <View>
+                <Text style={[styles.sectionTitle, { color: "#FFFFFF" }]}>
+                  Today&apos;s Progress
+                </Text>
+                <Text
+                  style={[
+                    styles.progressSubtitle,
+                    { color: "rgba(255, 255, 255, 0.9)" },
+                  ]}
+                >
+                  {new Date().toLocaleDateString("en-US", {
+                    weekday: "long",
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </Text>
+              </View>
+              <View
+                style={[
+                  styles.percentageBadge,
+                  { backgroundColor: "rgba(255, 255, 255, 0.25)" },
+                ]}
+              >
+                <Text style={[styles.percentageText, { color: "#FFFFFF" }]}>
+                  {Math.round(todayProgress)}%
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.progressContent}>
+              <ProgressRing 
+                progress={todayProgress} 
+                size={140} 
+                showLabel={true}
+                label="Today"
+              />
+              <View style={styles.progressStats}>
+                <View
+                  style={[
+                    styles.statItem,
+                    styles.statItemBordered,
+                    { borderColor: "rgba(255, 255, 255, 0.3)" },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.statIconContainer,
+                      { backgroundColor: "rgba(255, 255, 255, 0.25)" },
+                    ]}
+                  >
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={24}
+                      color="#FFFFFF"
+                    />
+                  </View>
+                  <View style={styles.statTextContainer}>
+                    <Text style={[styles.statValue, { color: "#FFFFFF" }]}>
+                      {stats.todayTaken ?? 0}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.statLabel,
+                        { color: "rgba(255, 255, 255, 0.9)" },
+                      ]}
+                    >
+                      Taken
+                    </Text>
+                  </View>
+                </View>
+
+                <View
+                  style={[
+                    styles.statItem,
+                    styles.statItemBordered,
+                    { borderColor: "rgba(255, 255, 255, 0.3)" },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.statIconContainer,
+                      { backgroundColor: "rgba(255, 255, 255, 0.25)" },
+                    ]}
+                  >
+                    <Ionicons name="calendar" size={24} color="#FFFFFF" />
+                  </View>
+                  <View style={styles.statTextContainer}>
+                    <Text style={[styles.statValue, { color: "#FFFFFF" }]}>
+                      {stats.todayTotal ?? 0}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.statLabel,
+                        { color: "rgba(255, 255, 255, 0.9)" },
+                      ]}
+                    >
+                      Scheduled
+                    </Text>
+                  </View>
+                </View>
+
+                <View
+                  style={[
+                    styles.statItem,
+                    styles.statItemBordered,
+                    { borderColor: "rgba(255, 255, 255, 0.3)" },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.statIconContainer,
+                      { backgroundColor: "rgba(255, 255, 255, 0.25)" },
+                    ]}
+                  >
+                    <Ionicons name="close-circle" size={24} color="#FFFFFF" />
+                  </View>
+                  <View style={styles.statTextContainer}>
+                    <Text style={[styles.statValue, { color: "#FFFFFF" }]}>
+                      {stats.todayMissed ?? 0}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.statLabel,
+                        { color: "rgba(255, 255, 255, 0.9)" },
+                      ]}
+                    >
+                      Missed
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            {/* Progress Bar */}
+            <View style={styles.progressBarContainer}>
+              <View
+                style={[
+                  styles.progressBarBackground,
+                  { backgroundColor: "rgba(255, 255, 255, 0.3)" },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.progressBarFill,
+                    {
+                      backgroundColor: "#FFFFFF",
+                      width: `${todayProgress}%`,
+                    },
+                  ]}
+                />
+              </View>
               <Text
                 style={[
-                  styles.progressSubtitle,
-                  { color: colors.textSecondary },
+                  styles.progressBarLabel,
+                  { color: "rgba(255, 255, 255, 0.9)" },
                 ]}
               >
-                {new Date().toLocaleDateString("en-US", {
-                  weekday: "long",
-                  month: "short",
-                  day: "numeric",
-                })}
+                {stats.todayTaken ?? 0} of {stats.todayTotal ?? 0} doses
+                completed
               </Text>
             </View>
-            <View
-              style={[
-                styles.percentageBadge,
-                { backgroundColor: colors.primary + "20" },
-              ]}
-            >
-              <Text style={[styles.percentageText, { color: colors.primary }]}>
-                {Math.round(todayProgress)}%
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.progressContent}>
-            <ProgressRing progress={todayProgress} size={140} />
-            <View style={styles.progressStats}>
-              <View
-                style={[
-                  styles.statItem,
-                  styles.statItemBordered,
-                  { borderColor: colors.border },
-                ]}
-              >
-                <View
-                  style={[
-                    styles.statIconContainer,
-                    { backgroundColor: colors.success + "15" },
-                  ]}
-                >
-                  <Ionicons
-                    name="checkmark-circle"
-                    size={24}
-                    color={colors.success}
-                  />
-                </View>
-                <View style={styles.statTextContainer}>
-                  <Text style={[styles.statValue, { color: colors.success }]}>
-                    {stats.todayTaken ?? 0}
-                  </Text>
-                  <Text
-                    style={[styles.statLabel, { color: colors.textSecondary }]}
-                  >
-                    Taken
-                  </Text>
-                </View>
-              </View>
-
-              <View
-                style={[
-                  styles.statItem,
-                  styles.statItemBordered,
-                  { borderColor: colors.border },
-                ]}
-              >
-                <View
-                  style={[
-                    styles.statIconContainer,
-                    { backgroundColor: colors.primary + "15" },
-                  ]}
-                >
-                  <Ionicons name="calendar" size={24} color={colors.primary} />
-                </View>
-                <View style={styles.statTextContainer}>
-                  <Text style={[styles.statValue, { color: colors.text }]}>
-                    {stats.todayTotal ?? 0}
-                  </Text>
-                  <Text
-                    style={[styles.statLabel, { color: colors.textSecondary }]}
-                  >
-                    Scheduled
-                  </Text>
-                </View>
-              </View>
-
-              <View
-                style={[
-                  styles.statItem,
-                  styles.statItemBordered,
-                  { borderColor: colors.border },
-                ]}
-              >
-                <View
-                  style={[
-                    styles.statIconContainer,
-                    { backgroundColor: colors.danger + "15" },
-                  ]}
-                >
-                  <Ionicons
-                    name="close-circle"
-                    size={24}
-                    color={colors.danger}
-                  />
-                </View>
-                <View style={styles.statTextContainer}>
-                  <Text style={[styles.statValue, { color: colors.danger }]}>
-                    {stats.todayMissed ?? 0}
-                  </Text>
-                  <Text
-                    style={[styles.statLabel, { color: colors.textSecondary }]}
-                  >
-                    Missed
-                  </Text>
-                </View>
-              </View>
-            </View>
-          </View>
-
-          {/* Progress Bar */}
-          <View style={styles.progressBarContainer}>
-            <View
-              style={[
-                styles.progressBarBackground,
-                { backgroundColor: colors.border },
-              ]}
-            >
-              <View
-                style={[
-                  styles.progressBarFill,
-                  {
-                    backgroundColor: colors.success,
-                    width: `${todayProgress}%`,
-                  },
-                ]}
-              />
-            </View>
-            <Text
-              style={[styles.progressBarLabel, { color: colors.textSecondary }]}
-            >
-              {stats.todayTaken ?? 0} of {stats.todayTotal ?? 0} doses completed
-            </Text>
-          </View>
-        </Card>
+          </LinearGradient>
+        </View>
 
         {/* Quick Stats */}
         <View style={styles.quickStats}>
-          <Card style={styles.quickStatCard}>
-            <Ionicons name="flame" size={24} color={colors.warning} />
-            <Text style={[styles.quickStatValue, { color: colors.text }]}>
-              {stats.currentStreak ?? 0}
-            </Text>
-            <Text
-              style={[styles.quickStatLabel, { color: colors.textSecondary }]}
+          <View style={styles.quickStatCard}>
+            <LinearGradient
+              colors={
+                colorScheme === "dark"
+                  ? Gradients.dark.streak
+                  : Gradients.light.streak
+              }
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              locations={[0, 1]}
+              style={styles.gradientQuickStat}
             >
-              Day Streak
-            </Text>
-          </Card>
-          <Card style={styles.quickStatCard}>
-            <Ionicons name="trending-up" size={24} color={colors.success} />
-            <Text style={[styles.quickStatValue, { color: colors.text }]}>
-              {Math.round(stats.weeklyAdherence ?? 0)}%
-            </Text>
-            <Text
-              style={[styles.quickStatLabel, { color: colors.textSecondary }]}
+              <Ionicons name="flame" size={24} color="#FFFFFF" />
+              <Text style={[styles.quickStatValue, { color: "#FFFFFF" }]}>
+                {stats.currentStreak ?? 0}
+              </Text>
+              <Text
+                style={[
+                  styles.quickStatLabel,
+                  { color: "rgba(255, 255, 255, 0.9)" },
+                ]}
+              >
+                Day Streak
+              </Text>
+            </LinearGradient>
+          </View>
+          <View style={styles.quickStatCard}>
+            <LinearGradient
+              colors={
+                colorScheme === "dark"
+                  ? Gradients.dark.adherence
+                  : Gradients.light.adherence
+              }
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              locations={[0, 1]}
+              style={styles.gradientQuickStat}
             >
-              Weekly
-            </Text>
-          </Card>
-          <Card style={styles.quickStatCard}>
-            <Ionicons name="medical" size={24} color={colors.primary} />
-            <Text style={[styles.quickStatValue, { color: colors.text }]}>
-              {stats.activeMedicines ?? 0}
-            </Text>
-            <Text
-              style={[styles.quickStatLabel, { color: colors.textSecondary }]}
+              <Ionicons name="trending-up" size={24} color="#FFFFFF" />
+              <Text style={[styles.quickStatValue, { color: "#FFFFFF" }]}>
+                {Math.round(stats.weeklyAdherence ?? 0)}%
+              </Text>
+              <Text
+                style={[
+                  styles.quickStatLabel,
+                  { color: "rgba(255, 255, 255, 0.9)" },
+                ]}
+              >
+                Weekly
+              </Text>
+            </LinearGradient>
+          </View>
+          <View style={styles.quickStatCard}>
+            <LinearGradient
+              colors={
+                colorScheme === "dark"
+                  ? Gradients.dark.active
+                  : Gradients.light.active
+              }
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              locations={[0, 1]}
+              style={styles.gradientQuickStat}
             >
-              Active
-            </Text>
-          </Card>
+              <Ionicons name="medical" size={24} color="#FFFFFF" />
+              <Text style={[styles.quickStatValue, { color: "#FFFFFF" }]}>
+                {stats.activeMedicines ?? 0}
+              </Text>
+              <Text
+                style={[
+                  styles.quickStatLabel,
+                  { color: "rgba(255, 255, 255, 0.9)" },
+                ]}
+              >
+                Active
+              </Text>
+            </LinearGradient>
+          </View>
         </View>
 
         {/* Past Pending Doses */}
@@ -513,11 +584,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: Spacing.md,
+    padding: Spacing.md,
     paddingBottom: Spacing.xl,
   },
   progressCard: {
     marginBottom: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    overflow: "hidden",
+    ...Shadows.lg,
+  },
+  gradientCard: {
+    padding: Spacing.md,
+    borderRadius: BorderRadius.lg,
   },
   progressHeader: {
     flexDirection: "row",
@@ -606,8 +684,14 @@ const styles = StyleSheet.create({
   },
   quickStatCard: {
     flex: 1,
+    borderRadius: BorderRadius.lg,
+    overflow: "hidden",
+    ...Shadows.md,
+  },
+  gradientQuickStat: {
     alignItems: "center",
     padding: Spacing.md,
+    borderRadius: BorderRadius.lg,
   },
   quickStatValue: {
     fontSize: Typography.fontSize.xl,

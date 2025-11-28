@@ -79,6 +79,18 @@ export const scheduleMedicineNotifications = async (
       return;
     }
 
+    // Cancel all existing notifications for this medicine
+    const allScheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
+    const medicineNotifications = allScheduledNotifications.filter(
+      (notification) => notification.content.data?.medicineId === medicineId
+    );
+    
+    for (const notification of medicineNotifications) {
+      await Notifications.cancelScheduledNotificationAsync(notification.identifier);
+    }
+    
+    console.log(`Cancelled ${medicineNotifications.length} notifications for medicine ${medicineId}`);
+
     // Delete old scheduled doses for this medicine that are in the future
     // This prevents duplicates when rescheduling
     const { executeQuery } = await import("../database/operations");
