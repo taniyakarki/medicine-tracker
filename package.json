@@ -2,6 +2,13 @@
   "name": "medicine-track",
   "main": "expo-router/entry",
   "version": "1.0.0",
+  "description": "A comprehensive medicine tracking app with dose history, reminders, and adherence monitoring",
+  "author": "Your Name",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0 <23.0.0",
+    "npm": ">=9.0.0"
+  },
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
