@@ -1,18 +1,21 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   FlatList,
   RefreshControl,
   StyleSheet,
+  Text,
   TouchableOpacity,
   useColorScheme,
   View,
 } from "react-native";
 import { MedicineCard } from "../../../components/medicine/MedicineCard";
 import { EmptyState } from "../../../components/ui/EmptyState";
+import { FilterChips, FilterOption } from "../../../components/ui/FilterChips";
 import { LoadingSpinner } from "../../../components/ui/LoadingSpinner";
-import { Colors, Spacing } from "../../../constants/design";
+import { SearchBar } from "../../../components/ui/SearchBar";
+import { Colors, Spacing, Typography } from "../../../constants/design";
 import { useMedicines } from "../../../lib/hooks/useMedicines";
 import { MedicineWithNextDose } from "../../../types/medicine";
 
@@ -22,6 +25,8 @@ export default function MedicinesListScreen() {
   const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
   const { medicines, loading, refresh } = useMedicines();
   const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
 
   // Reload medicines when screen comes into focus
   useFocusEffect(
@@ -41,6 +46,137 @@ export default function MedicinesListScreen() {
     router.push("/medicines/add");
   }, [router]);
 
+  // Filter options with counts
+  const filterOptions: FilterOption[] = useMemo(() => {
+    const typeFilters: FilterOption[] = [
+      {
+        id: "pill",
+        label: "Pill",
+        icon: "medical",
+        count: medicines.filter((m) => m.type === "pill").length,
+      },
+      {
+        id: "liquid",
+        label: "Liquid",
+        icon: "water",
+        count: medicines.filter((m) => m.type === "liquid").length,
+      },
+      {
+        id: "injection",
+        label: "Injection",
+        icon: "fitness",
+        count: medicines.filter((m) => m.type === "injection").length,
+      },
+      {
+        id: "inhaler",
+        label: "Inhaler",
+        icon: "cloud",
+        count: medicines.filter((m) => m.type === "inhaler").length,
+      },
+      {
+        id: "drops",
+        label: "Drops",
+        icon: "rainy",
+        count: medicines.filter((m) => m.type === "drops").length,
+      },
+      {
+        id: "other",
+        label: "Other",
+        icon: "ellipsis-horizontal",
+        count: medicines.filter((m) => m.type === "other").length,
+      },
+    ];
+
+    const statusFilters: FilterOption[] = [
+      {
+        id: "active",
+        label: "Active",
+        icon: "checkmark-circle",
+        count: medicines.filter((m) => m.is_active).length,
+      },
+      {
+        id: "inactive",
+        label: "Inactive",
+        icon: "close-circle",
+        count: medicines.filter((m) => !m.is_active).length,
+      },
+    ];
+
+    const scheduleFilters: FilterOption[] = [
+      {
+        id: "has_upcoming",
+        label: "Has Upcoming Dose",
+        icon: "time",
+        count: medicines.filter((m) => m.next_dose_time).length,
+      },
+    ];
+
+    return [...typeFilters, ...statusFilters, ...scheduleFilters];
+  }, [medicines]);
+
+  // Filter and search medicines
+  const filteredMedicines = useMemo(() => {
+    let result = medicines;
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      result = result.filter(
+        (medicine) =>
+          medicine.name.toLowerCase().includes(query) ||
+          medicine.dosage.toLowerCase().includes(query) ||
+          medicine.unit.toLowerCase().includes(query) ||
+          medicine.notes?.toLowerCase().includes(query)
+      );
+    }
+
+    // Apply type/status/schedule filters
+    if (selectedFilters.length > 0) {
+      result = result.filter((medicine) => {
+        // Check type filters
+        if (selectedFilters.includes(medicine.type)) {
+          return true;
+        }
+
+        // Check status filters
+        if (selectedFilters.includes("active") && medicine.is_active) {
+          return true;
+        }
+        if (selectedFilters.includes("inactive") && !medicine.is_active) {
+          return true;
+        }
+
+        // Check schedule filters
+        if (
+          selectedFilters.includes("has_upcoming") &&
+          medicine.next_dose_time
+        ) {
+          return true;
+        }
+
+        return false;
+      });
+    }
+
+    return result;
+  }, [medicines, searchQuery, selectedFilters]);
+
+  const handleFilterToggle = useCallback((filterId: string) => {
+    setSelectedFilters((prev) =>
+      prev.includes(filterId)
+        ? prev.filter((id) => id !== filterId)
+        : [...prev, filterId]
+    );
+  }, []);
+
+  const handleClearFilters = useCallback(() => {
+    setSelectedFilters([]);
+  }, []);
+
+  const handleClearSearch = useCallback(() => {
+    setSearchQuery("");
+  }, []);
+
   const renderMedicineCard = useCallback(
     ({ item }: { item: MedicineWithNextDose }) => (
       <MedicineCard medicine={item} />
@@ -50,8 +186,24 @@ export default function MedicinesListScreen() {
 
   const keyExtractor = useCallback((item: MedicineWithNextDose) => item.id, []);
 
-  const renderEmptyComponent = useCallback(
-    () => (
+  const renderEmptyComponent = useCallback(() => {
+    // Show different empty states based on context
+    if (searchQuery.trim() || selectedFilters.length > 0) {
+      return (
+        <EmptyState
+          icon="search-outline"
+          title="No Results Found"
+          description="Try adjusting your search or filters to find what you're looking for"
+          actionLabel="Clear Filters"
+          onAction={() => {
+            setSearchQuery("");
+            setSelectedFilters([]);
+          }}
+        />
+      );
+    }
+
+    return (
       <EmptyState
         icon="medical-outline"
         title="No Medicines Yet"
@@ -59,8 +211,48 @@ export default function MedicinesListScreen() {
         actionLabel="Add Medicine"
         onAction={handleAddMedicine}
       />
+    );
+  }, [handleAddMedicine, searchQuery, selectedFilters.length]);
+
+  const renderHeader = useCallback(
+    () => (
+      <View style={styles.headerContainer}>
+        {/* Search Bar */}
+        <SearchBar
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholder="Search medicines..."
+          onClear={handleClearSearch}
+        />
+
+        {/* Filter Chips */}
+        <FilterChips
+          filters={filterOptions}
+          selectedFilters={selectedFilters}
+          onFilterToggle={handleFilterToggle}
+          onClearAll={handleClearFilters}
+        />
+
+        {/* Results Count */}
+        {(searchQuery.trim() || selectedFilters.length > 0) && (
+          <View style={styles.resultsContainer}>
+            <Text style={[styles.resultsText, { color: colors.textSecondary }]}>
+              {filteredMedicines.length} {filteredMedicines.length === 1 ? "result" : "results"} found
+            </Text>
+          </View>
+        )}
+      </View>
     ),
-    [handleAddMedicine]
+    [
+      searchQuery,
+      handleClearSearch,
+      filterOptions,
+      selectedFilters,
+      handleFilterToggle,
+      handleClearFilters,
+      filteredMedicines.length,
+      colors.textSecondary,
+    ]
   );
 
   if (loading && !refreshing) {
@@ -70,10 +262,11 @@ export default function MedicinesListScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <FlatList
-        data={medicines}
+        data={filteredMedicines}
         renderItem={renderMedicineCard}
         keyExtractor={keyExtractor}
         contentContainerStyle={styles.scrollContent}
+        ListHeaderComponent={renderHeader}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -104,9 +297,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: Spacing.md,
+    paddingHorizontal: Spacing.md,
     paddingBottom: 100,
     flexGrow: 1,
+  },
+  headerContainer: {
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.sm,
+  },
+  resultsContainer: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  resultsText: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.medium,
   },
   fab: {
     position: "absolute",

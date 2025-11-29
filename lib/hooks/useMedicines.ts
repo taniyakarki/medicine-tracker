@@ -4,6 +4,7 @@ import {
   getAllMedicines,
   getActiveMedicines,
   getActiveMedicinesWithNextDose,
+  getAllMedicinesWithNextDose,
   getMedicineById,
   createMedicine as createMedicineDB,
   updateMedicine as updateMedicineDB,
@@ -13,7 +14,7 @@ import { ensureUserExists } from '../database/models/user';
 
 const CACHE_DURATION = 30000; // 30 seconds
 
-export const useMedicines = () => {
+export const useMedicines = (includeInactive: boolean = false) => {
   const [medicines, setMedicines] = useState<MedicineWithNextDose[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +34,9 @@ export const useMedicines = () => {
     try {
       setLoading(true);
       const user = await ensureUserExists();
-      const data = await getActiveMedicinesWithNextDose(user.id);
+      const data = includeInactive 
+        ? await getAllMedicinesWithNextDose(user.id)
+        : await getActiveMedicinesWithNextDose(user.id);
       
       // Update cache
       cacheRef.current = { data, timestamp: now };
@@ -45,7 +48,7 @@ export const useMedicines = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [includeInactive]);
 
   useEffect(() => {
     loadMedicines();

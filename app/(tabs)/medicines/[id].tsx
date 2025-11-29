@@ -157,9 +157,42 @@ export default function MedicineDetailScreen() {
 
     // Check each schedule
     for (const schedule of schedules) {
+      if (!schedule.is_active) continue;
+
       if (schedule.interval_hours) {
-        // For interval-based schedules, find the next occurrence
-        // This is complex, so we'll just show "Every X hours" for now
+        // For interval-based schedules
+        try {
+          const intervalHours = schedule.interval_hours;
+          const startTime = schedule.start_time || schedule.time;
+          
+          if (!startTime) continue;
+          
+          const [startHours, startMinutes] = startTime.split(":").map(Number);
+          
+          // Calculate the next dose based on interval
+          const startDate = new Date(now);
+          startDate.setHours(startHours, startMinutes, 0, 0);
+          
+          // If start time is in the past today, calculate next occurrence
+          let nextIntervalDate = new Date(startDate);
+          
+          while (nextIntervalDate <= now) {
+            nextIntervalDate = new Date(nextIntervalDate.getTime() + intervalHours * 60 * 60 * 1000);
+          }
+          
+          const diff = (nextIntervalDate.getTime() - now.getTime()) / (1000 * 60); // in minutes
+          
+          if (diff < minDiff) {
+            minDiff = diff;
+            const hours = nextIntervalDate.getHours();
+            const minutes = nextIntervalDate.getMinutes();
+            const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+            
+            nextDose = { time: timeStr, date: nextIntervalDate };
+          }
+        } catch (error) {
+          console.error("Error calculating interval-based schedule:", error);
+        }
         continue;
       }
 
@@ -241,17 +274,29 @@ export default function MedicineDetailScreen() {
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
 
-    const isToday = nextDose.date.toDateString() === now.toDateString();
-    const isTomorrow =
-      nextDose.date.toDateString() ===
-      new Date(now.getTime() + 24 * 60 * 60 * 1000).toDateString();
+    // Calculate day boundaries for accurate day detection
+    const nowStart = new Date(now);
+    nowStart.setHours(0, 0, 0, 0);
+    
+    const targetStart = new Date(nextDose.date);
+    targetStart.setHours(0, 0, 0, 0);
+    
+    const daysDiff = Math.floor((targetStart.getTime() - nowStart.getTime()) / 86400000);
 
     let dateStr = "";
-    if (isToday) {
+    let timeUntil = "";
+
+    // Determine date string
+    if (daysDiff === 0) {
       dateStr = "Today";
-    } else if (isTomorrow) {
+    } else if (daysDiff === 1) {
       dateStr = "Tomorrow";
+    } else if (daysDiff > 1 && daysDiff <= 7) {
+      // Show day name for next week
+      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      dateStr = dayNames[nextDose.date.getDay()];
     } else {
+      // Show full date for further dates
       dateStr = nextDose.date.toLocaleDateString("en-US", {
         weekday: "short",
         month: "short",
@@ -259,11 +304,25 @@ export default function MedicineDetailScreen() {
       });
     }
 
-    let timeUntil = "";
-    if (hours > 0) {
-      timeUntil = `in ${hours}h ${minutes}m`;
-    } else {
+    // Determine time until string with natural language
+    if (minutes < 1) {
+      timeUntil = "Now";
+    } else if (minutes < 60) {
       timeUntil = `in ${minutes}m`;
+    } else if (hours < 2) {
+      timeUntil = `in ${hours}h`;
+    } else if (daysDiff === 0) {
+      // Later today but more than 2 hours away
+      timeUntil = `Later today`;
+    } else if (daysDiff === 1) {
+      timeUntil = `Tomorrow`;
+    } else if (daysDiff > 1 && daysDiff <= 7) {
+      // Within next week
+      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      timeUntil = dayNames[nextDose.date.getDay()];
+    } else {
+      // More than a week away
+      timeUntil = `in ${daysDiff} days`;
     }
 
     return {

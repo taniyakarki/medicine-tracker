@@ -77,3 +77,13 @@ export const getAllActiveSchedules = async (): Promise<Schedule[]> => {
      ORDER BY s.time ASC`
   );
 };
+
+export const getAllSchedules = async (userId: string): Promise<Schedule[]> => {
+  return await executeQuery<Schedule>(
+    `SELECT s.* FROM ${TABLE_NAME} s
+     JOIN medicines m ON s.medicine_id = m.id
+     WHERE m.user_id = ?
+     ORDER BY s.created_at DESC`,
+    [userId]
+  );
+};

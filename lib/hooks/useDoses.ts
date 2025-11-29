@@ -7,6 +7,8 @@ import {
   getDoseStats,
   markDoseAsTaken as markDoseAsTakenDB,
   markDoseAsSkipped as markDoseAsSkippedDB,
+  calculateStreak,
+  getCalendarMonthData,
 } from '../database/models/dose';
 import { getActiveMedicineCount } from '../database/models/medicine';
 import { ensureUserExists } from '../database/models/user';
@@ -202,6 +204,9 @@ export const useMedicineStats = () => {
       const weeklyAdherence =
         weekStats.total > 0 ? (weekStats.taken / weekStats.total) * 100 : 0;
 
+      // Calculate current streak
+      const currentStreak = await calculateStreak(user.id);
+
       const newStats = {
         totalMedicines: activeMedicines,
         activeMedicines,
@@ -209,7 +214,7 @@ export const useMedicineStats = () => {
         todayTaken: todayStats.taken,
         todayMissed: todayStats.missed,
         weeklyAdherence,
-        currentStreak: 0, // TODO: Calculate streak
+        currentStreak,
       };
 
       // Update cache
@@ -257,6 +262,46 @@ export const useDoseActions = () => {
   return {
     markAsTaken,
     markAsSkipped,
+  };
+};
+
+export const useCalendarData = (month: Date) => {
+  const [data, setData] = useState<Array<{
+    date: string;
+    total: number;
+    taken: number;
+    missed: number;
+    skipped: number;
+  }>>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const user = await ensureUserExists();
+      const year = month.getFullYear();
+      const monthIndex = month.getMonth();
+      const calendarData = await getCalendarMonthData(user.id, year, monthIndex);
+      setData(calendarData);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load calendar data');
+      console.error('Error loading calendar data:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [month]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  return {
+    data,
+    loading,
+    error,
+    refresh: loadData,
   };
 };
 

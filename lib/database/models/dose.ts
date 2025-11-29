@@ -344,3 +344,118 @@ export const removeDuplicateDoses = async (): Promise<number> => {
   // Return the number of deleted rows
   return result.changes || 0;
 };
+
+/**
+ * Calculate the current streak of consecutive days without missed doses
+ * A streak is broken if any dose was missed on a day
+ * Days with no scheduled doses don't break the streak
+ */
+export const calculateStreak = async (userId: string): Promise<number> => {
+  // Get all doses for the user, grouped by day
+  const doses = await executeQuery<{
+    date: string;
+    total: number;
+    missed: number;
+  }>(
+    `SELECT 
+      DATE(d.scheduled_time) as date,
+      COUNT(*) as total,
+      SUM(CASE WHEN d.status = 'missed' THEN 1 ELSE 0 END) as missed
+     FROM (
+       SELECT d.scheduled_time, d.status, d.medicine_id
+       FROM ${TABLE_NAME} d
+       JOIN medicines m ON d.medicine_id = m.id
+       WHERE m.user_id = ? 
+         AND d.scheduled_time <= ?
+         AND m.is_active = 1
+       GROUP BY d.medicine_id, d.scheduled_time
+       HAVING d.id = MIN(d.id)
+     ) d
+     GROUP BY DATE(d.scheduled_time)
+     ORDER BY date DESC`,
+    [userId, getCurrentTimestamp()]
+  );
+
+  if (doses.length === 0) {
+    return 0;
+  }
+
+  let streak = 0;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  for (let i = 0; i < doses.length; i++) {
+    const dose = doses[i];
+    const doseDate = new Date(dose.date);
+    doseDate.setHours(0, 0, 0, 0);
+
+    // Calculate expected date for this position in streak
+    const expectedDate = new Date(today);
+    expectedDate.setDate(today.getDate() - i);
+    expectedDate.setHours(0, 0, 0, 0);
+
+    // If there's a gap in dates, streak is broken
+    if (doseDate.getTime() !== expectedDate.getTime()) {
+      break;
+    }
+
+    // If any dose was missed on this day, streak is broken
+    if (dose.missed > 0) {
+      break;
+    }
+
+    streak++;
+  }
+
+  return streak;
+};
+
+/**
+ * Get calendar data for a specific month
+ * Returns adherence data for each day
+ */
+export const getCalendarMonthData = async (
+  userId: string,
+  year: number,
+  month: number // 0-11 (January = 0)
+): Promise<
+  Array<{
+    date: string;
+    total: number;
+    taken: number;
+    missed: number;
+    skipped: number;
+  }>
+> => {
+  const startDate = new Date(year, month, 1);
+  const endDate = new Date(year, month + 1, 0, 23, 59, 59, 999);
+
+  return await executeQuery<{
+    date: string;
+    total: number;
+    taken: number;
+    missed: number;
+    skipped: number;
+  }>(
+    `SELECT 
+      DATE(d.scheduled_time) as date,
+      COUNT(*) as total,
+      SUM(CASE WHEN d.status = 'taken' THEN 1 ELSE 0 END) as taken,
+      SUM(CASE WHEN d.status = 'missed' THEN 1 ELSE 0 END) as missed,
+      SUM(CASE WHEN d.status = 'skipped' THEN 1 ELSE 0 END) as skipped
+     FROM (
+       SELECT d.scheduled_time, d.status, d.medicine_id
+       FROM ${TABLE_NAME} d
+       JOIN medicines m ON d.medicine_id = m.id
+       WHERE m.user_id = ? 
+         AND d.scheduled_time >= ? 
+         AND d.scheduled_time <= ?
+         AND m.is_active = 1
+       GROUP BY d.medicine_id, d.scheduled_time
+       HAVING d.id = MIN(d.id)
+     ) d
+     GROUP BY DATE(d.scheduled_time)
+     ORDER BY date ASC`,
+    [userId, startDate.toISOString(), endDate.toISOString()]
+  );
+};

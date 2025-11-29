@@ -98,6 +98,10 @@ export interface NotificationSettings {
   remind_before_minutes: number;
   remind_after_missed_minutes: number;
   snooze_duration_minutes: number;
+  dnd_enabled: boolean;
+  dnd_start_time?: string; // HH:mm format
+  dnd_end_time?: string; // HH:mm format
+  dnd_allow_critical: boolean;
   created_at: string;
   updated_at: string;
 }

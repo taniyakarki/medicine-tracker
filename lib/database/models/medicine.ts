@@ -118,6 +118,28 @@ export const getActiveMedicinesWithNextDose = async (
   return medicinesWithNextDose;
 };
 
+export const getAllMedicinesWithNextDose = async (
+  userId: string
+): Promise<MedicineWithNextDose[]> => {
+  // Get all medicines (active and inactive)
+  const medicines = await getAllMedicines(userId);
+
+  // For each medicine, calculate the next dose based on schedules
+  const medicinesWithNextDose = await Promise.all(
+    medicines.map(async (medicine) => {
+      const schedules = await getSchedulesByMedicineId(medicine.id);
+      const nextDose = medicine.is_active ? calculateNextDose(schedules) : undefined;
+
+      return {
+        ...medicine,
+        nextDose,
+      };
+    })
+  );
+
+  return medicinesWithNextDose;
+};
+
 // Helper function to calculate next dose from schedules
 const calculateNextDose = (
   schedules: any[]
@@ -136,7 +158,43 @@ const calculateNextDose = (
     if (!schedule.is_active) continue;
 
     if (schedule.interval_hours) {
-      // For interval-based schedules, skip for now (complex logic)
+      // For interval-based schedules
+      try {
+        const intervalHours = schedule.interval_hours;
+        const startTime = schedule.start_time || schedule.time;
+        
+        if (!startTime) continue;
+        
+        const [startHours, startMinutes] = startTime.split(":").map(Number);
+        
+        // Calculate the next dose based on interval
+        const startDate = new Date(now);
+        startDate.setHours(startHours, startMinutes, 0, 0);
+        
+        // If start time is in the past today, calculate next occurrence
+        let nextIntervalDate = new Date(startDate);
+        
+        while (nextIntervalDate <= now) {
+          nextIntervalDate = new Date(nextIntervalDate.getTime() + intervalHours * 60 * 60 * 1000);
+        }
+        
+        const diff = (nextIntervalDate.getTime() - now.getTime()) / (1000 * 60); // in minutes
+        
+        if (diff < minDiff) {
+          minDiff = diff;
+          const hours = nextIntervalDate.getHours();
+          const minutes = nextIntervalDate.getMinutes();
+          const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+          
+          nextDose = {
+            schedule_id: schedule.id,
+            scheduled_time: nextIntervalDate.toISOString(),
+            time: timeStr,
+          };
+        }
+      } catch (error) {
+        console.error("Error calculating interval-based schedule:", error);
+      }
       continue;
     }
 

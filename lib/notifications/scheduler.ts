@@ -14,11 +14,64 @@ export interface ScheduleNotificationParams {
   scheduleId: string;
 }
 
+const isInDndPeriod = (time: Date, dndStart?: string, dndEnd?: string): boolean => {
+  if (!dndStart || !dndEnd) return false;
+
+  const [startHour, startMin] = dndStart.split(":").map(Number);
+  const [endHour, endMin] = dndEnd.split(":").map(Number);
+
+  const timeMinutes = time.getHours() * 60 + time.getMinutes();
+  const startMinutes = startHour * 60 + startMin;
+  const endMinutes = endHour * 60 + endMin;
+
+  // Handle overnight DND (e.g., 22:00 - 07:00)
+  if (startMinutes > endMinutes) {
+    return timeMinutes >= startMinutes || timeMinutes < endMinutes;
+  }
+
+  return timeMinutes >= startMinutes && timeMinutes < endMinutes;
+};
+
 export const scheduleNotification = async (
-  params: ScheduleNotificationParams
+  params: ScheduleNotificationParams,
+  userId?: string
 ): Promise<string> => {
   const { medicineId, medicineName, dosage, unit, scheduledTime, scheduleId } =
     params;
+
+  // Get notification settings
+  const { ensureNotificationSettings } = await import("../database/models/notification-settings");
+  const { ensureUserExists } = await import("../database/models/user");
+  
+  let activeUserId = userId;
+  if (!activeUserId) {
+    const user = await ensureUserExists();
+    activeUserId = user.id;
+  }
+
+  const settings = await ensureNotificationSettings(activeUserId);
+
+  // Check if notifications are enabled
+  if (!settings.enabled) {
+    return "";
+  }
+
+  // Check DND settings
+  const medicine = await getMedicineById(medicineId);
+  const isInDnd = settings.dnd_enabled && 
+                  isInDndPeriod(scheduledTime, settings.dnd_start_time, settings.dnd_end_time);
+  
+  // Skip notification if in DND and medicine is not critical
+  if (isInDnd && !settings.dnd_allow_critical) {
+    // Still create the dose record but don't schedule notification
+    await createDose({
+      medicine_id: medicineId,
+      schedule_id: scheduleId,
+      scheduled_time: scheduledTime.toISOString(),
+      status: "scheduled",
+    });
+    return "";
+  }
 
   // Create dose record
   const doseId = await createDose({
@@ -28,7 +81,36 @@ export const scheduleNotification = async (
     status: "scheduled",
   });
 
-  // Schedule notification
+  // Schedule "remind before" notification if enabled
+  if (settings.remind_before_minutes > 0) {
+    const remindBeforeTime = new Date(scheduledTime.getTime() - settings.remind_before_minutes * 60 * 1000);
+    
+    if (remindBeforeTime > new Date()) {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: "Upcoming Medicine",
+          body: `${medicineName} (${dosage} ${unit}) in ${settings.remind_before_minutes} minutes`,
+          data: {
+            doseId,
+            medicineId,
+            medicineName,
+            dosage: `${dosage} ${unit}`,
+            scheduledTime: scheduledTime.toISOString(),
+            type: "medicine_reminder_before",
+          },
+          categoryIdentifier: "medicine-reminder",
+          sound: settings.sound,
+          priority: Platform.OS === "android" ? "high" : "default",
+        },
+        trigger: {
+          date: remindBeforeTime,
+          channelId: "medicine-reminders",
+        },
+      });
+    }
+  }
+
+  // Schedule main notification
   const notificationId = await Notifications.scheduleNotificationAsync({
     content: {
       title: "Medicine Reminder",
@@ -42,7 +124,7 @@ export const scheduleNotification = async (
         type: "medicine_reminder",
       },
       categoryIdentifier: "medicine-reminder",
-      sound: "default",
+      sound: settings.sound,
       priority: Platform.OS === "android" ? "max" : "high",
     },
     trigger: {
@@ -278,8 +360,20 @@ export const snoozeNotification = async (
   medicineId: string,
   medicineName: string,
   dosage: string,
-  snoozeMinutes: number = 10
+  userId?: string
 ): Promise<void> => {
+  // Get notification settings for snooze duration
+  const { ensureNotificationSettings } = await import("../database/models/notification-settings");
+  const { ensureUserExists } = await import("../database/models/user");
+  
+  let activeUserId = userId;
+  if (!activeUserId) {
+    const user = await ensureUserExists();
+    activeUserId = user.id;
+  }
+
+  const settings = await ensureNotificationSettings(activeUserId);
+  const snoozeMinutes = settings.snooze_duration_minutes || 10;
   const snoozeTime = new Date(Date.now() + snoozeMinutes * 60 * 1000);
 
   await Notifications.scheduleNotificationAsync({
@@ -295,7 +389,7 @@ export const snoozeNotification = async (
         type: "medicine_reminder",
       },
       categoryIdentifier: "medicine-reminder",
-      sound: "default",
+      sound: settings.sound,
     },
     trigger: {
       date: snoozeTime,

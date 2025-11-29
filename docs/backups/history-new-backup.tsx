@@ -11,7 +11,7 @@ import {
   useColorScheme,
   View,
 } from "react-native";
-import { Calendar } from "../../components/ui/Calendar";
+import { Calendar, CalendarDayData } from "../../components/ui/Calendar";
 import { Card } from "../../components/ui/Card";
 import { DatePicker } from "../../components/ui/DatePicker";
 import { LoadingSpinner } from "../../components/ui/LoadingSpinner";
@@ -1079,7 +1079,7 @@ export default function HistoryScreen() {
       >
         <View style={styles.exportModalContent}>
           <Text style={[styles.helperText, { color: colors.textSecondary }]}>
-            Choose what you&apos;d like to export
+            Choose what you'd like to export
           </Text>
 
           <TouchableOpacity

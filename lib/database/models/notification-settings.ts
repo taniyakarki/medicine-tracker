@@ -43,6 +43,10 @@ export const ensureNotificationSettings = async (
       remind_before_minutes: 0,
       remind_after_missed_minutes: 15,
       snooze_duration_minutes: 10,
+      dnd_enabled: false,
+      dnd_start_time: "22:00",
+      dnd_end_time: "07:00",
+      dnd_allow_critical: false,
     });
 
     settings = await executeQueryFirst<NotificationSettings>(
@@ -56,4 +60,10 @@ export const ensureNotificationSettings = async (
   }
 
   return settings;
+};
+
+export const getNotificationSettings = async (
+  userId: string
+): Promise<NotificationSettings | null> => {
+  return await getNotificationSettingsByUserId(userId);
 };

@@ -4,10 +4,10 @@ import { router, Stack, useFocusEffect } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
   Alert,
-  Image,
   Linking,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TouchableOpacity,
   useColorScheme,
@@ -15,8 +15,6 @@ import {
 } from "react-native";
 import { Card } from "../../../components/ui/Card";
 import { LoadingSpinner } from "../../../components/ui/LoadingSpinner";
-import { Modal } from "../../../components/ui/Modal";
-import { ThemeSelector } from "../../../components/ui/ThemeSelector";
 import {
   BorderRadius,
   Colors,
@@ -26,17 +24,7 @@ import {
 } from "../../../constants/design";
 import { getEmergencyContactsByUserId } from "../../../lib/database/models/emergency-contact";
 import { ensureNotificationSettings } from "../../../lib/database/models/notification-settings";
-import { ensureUserExists, updateUser } from "../../../lib/database/models/user";
-import {
-  exportBackup,
-  importBackup,
-} from "../../../lib/utils/backup-restore-helpers";
-import {
-  pickImageFromCamera,
-  pickImageFromGallery,
-  showImagePickerOptions,
-  deleteProfilePhoto,
-} from "../../../lib/utils/profile-photo-helpers";
+import { ensureUserExists } from "../../../lib/database/models/user";
 import {
   EmergencyContact,
   NotificationSettings,
@@ -54,9 +42,6 @@ export default function ProfileScreen() {
   const [notificationSettings, setNotificationSettings] =
     useState<NotificationSettings | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showThemeModal, setShowThemeModal] = useState(false);
-  const [themeMode, setThemeMode] = useState<"light" | "dark" | "auto">("auto");
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
@@ -135,67 +120,15 @@ export default function ProfileScreen() {
     );
   };
 
-
-  const handleChangePhoto = async () => {
-    try {
-      const option = await showImagePickerOptions();
-      if (!option) return;
-
-      setUploadingPhoto(true);
-
-      let imageUri: string | null = null;
-
-      if (option === "camera") {
-        imageUri = await pickImageFromCamera();
-      } else {
-        imageUri = await pickImageFromGallery();
-      }
-
-      if (imageUri && user) {
-        // Delete old photo if exists
-        if (user.profile_image) {
-          await deleteProfilePhoto(user.profile_image);
-        }
-
-        // Update user with new photo
-        await updateUser(user.id, { profile_image: imageUri });
-        await loadData();
-        Alert.alert("Success", "Profile photo updated successfully");
-      }
-    } catch (error) {
-      console.error("Error changing photo:", error);
-      Alert.alert("Error", "Failed to update profile photo");
-    } finally {
-      setUploadingPhoto(false);
-    }
-  };
-
-  const handleThemeChange = async (mode: "light" | "dark" | "auto") => {
-    setThemeMode(mode);
-    setShowThemeModal(false);
+  const handleToggleNotifications = async (enabled: boolean) => {
     Alert.alert(
-      "Theme Changed",
-      `Theme set to ${mode}. Please restart the app for changes to take effect.`
+      "Notifications",
+      `Notifications ${enabled ? "enabled" : "disabled"}`
     );
   };
 
-  const handleExportData = async () => {
-    try {
-      await exportBackup();
-    } catch (error) {
-      console.error("Error exporting data:", error);
-      Alert.alert("Error", "Failed to export data");
-    }
-  };
-
-  const handleImportData = async () => {
-    try {
-      await importBackup();
-      await loadData();
-    } catch (error) {
-      console.error("Error importing data:", error);
-      // Error is already shown in importBackup
-    }
+  const handleExportData = () => {
+    Alert.alert("Export Data", "Data export feature coming soon!");
   };
 
   if (loading) {
@@ -235,69 +168,39 @@ export default function ProfileScreen() {
               <View style={styles.avatarSection}>
                 <View style={styles.avatarOuterRing}>
                   <View style={styles.avatarMiddleRing}>
-                    {user?.profile_image ? (
-                      <Image
-                        source={{ uri: user.profile_image }}
-                        style={styles.avatarImage}
-                      />
-                    ) : (
-                      <LinearGradient
-                        colors={
-                          colorScheme === "dark"
-                            ? ["#f093fb", "#f5576c", "#4facfe"]
-                            : ["#ffffff", "#f0f0f0"]
-                        }
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={styles.avatar}
+                    <LinearGradient
+                      colors={
+                        colorScheme === "dark"
+                          ? ["#f093fb", "#f5576c", "#4facfe"]
+                          : ["#ffffff", "#f0f0f0"]
+                      }
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.avatar}
+                    >
+                      <Text
+                        style={[
+                          styles.avatarText,
+                          {
+                            color:
+                              colorScheme === "dark" ? "#FFFFFF" : "#667eea",
+                          },
+                        ]}
                       >
-                        <Text
-                          style={[
-                            styles.avatarText,
-                            {
-                              color:
-                                colorScheme === "dark" ? "#FFFFFF" : "#667eea",
-                            },
-                          ]}
-                        >
-                          {user?.name.charAt(0).toUpperCase() || "U"}
-                        </Text>
-                      </LinearGradient>
-                    )}
+                        {user?.name.charAt(0).toUpperCase() || "U"}
+                      </Text>
+                    </LinearGradient>
                   </View>
                 </View>
 
-                {/* Change Photo Button */}
+                {/* Edit Button - Floating */}
                 <TouchableOpacity
-                  onPress={handleChangePhoto}
+                  onPress={handleEditProfile}
                   style={[
                     styles.editButton,
                     {
                       backgroundColor:
                         colorScheme === "dark" ? "#f5576c" : "#FFFFFF",
-                    },
-                  ]}
-                  disabled={uploadingPhoto}
-                >
-                  {uploadingPhoto ? (
-                    <LoadingSpinner size="small" />
-                  ) : (
-                    <Ionicons
-                      name="camera"
-                      size={18}
-                      color={colorScheme === "dark" ? "#FFFFFF" : "#667eea"}
-                    />
-                  )}
-                </TouchableOpacity>
-
-                {/* Edit Profile Button */}
-                <TouchableOpacity
-                  onPress={handleEditProfile}
-                  style={[
-                    styles.editProfileButton,
-                    {
-                      backgroundColor:
-                        colorScheme === "dark" ? "#4facfe" : "#FFFFFF",
                     },
                   ]}
                 >
@@ -610,44 +513,143 @@ export default function ProfileScreen() {
             </Text>
           </View>
 
-          <TouchableOpacity
-            style={[
-              styles.actionButton,
-              { backgroundColor: colors.surfaceSecondary },
-            ]}
-            onPress={() => router.push("/profile/notification-settings")}
-          >
-            <View style={styles.actionButtonContent}>
-              <View
-                style={[
-                  styles.actionButtonIcon,
-                  { backgroundColor: colors.info + "20" },
-                ]}
-              >
-                <Ionicons name="settings" size={24} color={colors.info} />
-              </View>
-              <View style={styles.actionButtonText}>
-                <Text style={[styles.actionButtonTitle, { color: colors.text }]}>
-                  Manage Notifications
-                </Text>
-                <Text
+          <View style={styles.settingsGroup}>
+            <View style={styles.settingItem}>
+              <View style={styles.settingLeft}>
+                <View
                   style={[
-                    styles.actionButtonDescription,
-                    { color: colors.textSecondary },
+                    styles.settingIconContainer,
+                    { backgroundColor: colors.primary + "15" },
                   ]}
                 >
-                  {notificationSettings?.enabled
-                    ? "Notifications enabled"
-                    : "Notifications disabled"}
-                </Text>
+                  <Ionicons
+                    name="notifications"
+                    size={20}
+                    color={colors.primary}
+                  />
+                </View>
+                <View style={styles.settingTextContainer}>
+                  <Text style={[styles.settingLabel, { color: colors.text }]}>
+                    Enable Notifications
+                  </Text>
+                  <Text
+                    style={[
+                      styles.settingDescription,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    Receive medication reminders
+                  </Text>
+                </View>
               </View>
+              <Switch
+                value={notificationSettings?.enabled || false}
+                onValueChange={handleToggleNotifications}
+                trackColor={{ false: colors.border, true: colors.primary }}
+              />
             </View>
-            <Ionicons
-              name="chevron-forward"
-              size={24}
-              color={colors.textSecondary}
-            />
-          </TouchableOpacity>
+
+            <View style={styles.settingItem}>
+              <View style={styles.settingLeft}>
+                <View
+                  style={[
+                    styles.settingIconContainer,
+                    { backgroundColor: colors.success + "15" },
+                  ]}
+                >
+                  <Ionicons
+                    name="volume-high"
+                    size={20}
+                    color={colors.success}
+                  />
+                </View>
+                <View style={styles.settingTextContainer}>
+                  <Text style={[styles.settingLabel, { color: colors.text }]}>
+                    Sound
+                  </Text>
+                  <Text
+                    style={[
+                      styles.settingDescription,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    {notificationSettings?.sound || "Default"}
+                  </Text>
+                </View>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={colors.textSecondary}
+              />
+            </View>
+
+            <View style={styles.settingItem}>
+              <View style={styles.settingLeft}>
+                <View
+                  style={[
+                    styles.settingIconContainer,
+                    { backgroundColor: colors.warning + "15" },
+                  ]}
+                >
+                  <Ionicons
+                    name="phone-portrait"
+                    size={20}
+                    color={colors.warning}
+                  />
+                </View>
+                <View style={styles.settingTextContainer}>
+                  <Text style={[styles.settingLabel, { color: colors.text }]}>
+                    Vibration
+                  </Text>
+                  <Text
+                    style={[
+                      styles.settingDescription,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    Vibrate on notifications
+                  </Text>
+                </View>
+              </View>
+              <Switch
+                value={notificationSettings?.vibration || false}
+                onValueChange={() => {}}
+                trackColor={{ false: colors.border, true: colors.primary }}
+              />
+            </View>
+
+            <View style={styles.settingItem}>
+              <View style={styles.settingLeft}>
+                <View
+                  style={[
+                    styles.settingIconContainer,
+                    { backgroundColor: colors.info + "15" },
+                  ]}
+                >
+                  <Ionicons name="expand" size={20} color={colors.info} />
+                </View>
+                <View style={styles.settingTextContainer}>
+                  <Text style={[styles.settingLabel, { color: colors.text }]}>
+                    Full Screen Alerts
+                  </Text>
+                  <Text
+                    style={[
+                      styles.settingDescription,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    Show full screen reminders
+                  </Text>
+                </View>
+              </View>
+              <Switch
+                value={notificationSettings?.full_screen_enabled || false}
+                onValueChange={() => {}}
+                trackColor={{ false: colors.border, true: colors.primary }}
+              />
+            </View>
+          </View>
         </Card>
 
         {/* App Settings */}
@@ -660,10 +662,7 @@ export default function ProfileScreen() {
           </View>
 
           <View style={styles.settingsGroup}>
-            <TouchableOpacity
-              style={styles.settingItem}
-              onPress={() => setShowThemeModal(true)}
-            >
+            <TouchableOpacity style={styles.settingItem}>
               <View style={styles.settingLeft}>
                 <View
                   style={[
@@ -672,13 +671,7 @@ export default function ProfileScreen() {
                   ]}
                 >
                   <Ionicons
-                    name={
-                      themeMode === "dark"
-                        ? "moon"
-                        : themeMode === "light"
-                        ? "sunny"
-                        : "phone-portrait"
-                    }
+                    name="moon"
                     size={20}
                     color={colors.textSecondary}
                   />
@@ -693,11 +686,7 @@ export default function ProfileScreen() {
                       { color: colors.textSecondary },
                     ]}
                   >
-                    {themeMode === "auto"
-                      ? "Auto (System)"
-                      : themeMode === "dark"
-                      ? "Dark"
-                      : "Light"}
+                    Auto (System)
                   </Text>
                 </View>
               </View>
@@ -723,7 +712,7 @@ export default function ProfileScreen() {
                 </View>
                 <View style={styles.settingTextContainer}>
                   <Text style={[styles.settingLabel, { color: colors.text }]}>
-                    Export Backup
+                    Export Data
                   </Text>
                   <Text
                     style={[
@@ -732,40 +721,6 @@ export default function ProfileScreen() {
                     ]}
                   >
                     Download your data as JSON
-                  </Text>
-                </View>
-              </View>
-              <Ionicons
-                name="chevron-forward"
-                size={20}
-                color={colors.textSecondary}
-              />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.settingItem}
-              onPress={handleImportData}
-            >
-              <View style={styles.settingLeft}>
-                <View
-                  style={[
-                    styles.settingIconContainer,
-                    { backgroundColor: colors.warning + "15" },
-                  ]}
-                >
-                  <Ionicons name="cloud-upload" size={20} color={colors.warning} />
-                </View>
-                <View style={styles.settingTextContainer}>
-                  <Text style={[styles.settingLabel, { color: colors.text }]}>
-                    Restore Backup
-                  </Text>
-                  <Text
-                    style={[
-                      styles.settingDescription,
-                      { color: colors.textSecondary },
-                    ]}
-                  >
-                    Import data from backup file
                   </Text>
                 </View>
               </View>
@@ -873,18 +828,6 @@ export default function ProfileScreen() {
           </Text>
         </View>
       </ScrollView>
-
-      {/* Theme Selection Modal */}
-      <Modal
-        visible={showThemeModal}
-        onClose={() => setShowThemeModal(false)}
-        title="Choose Theme"
-      >
-        <ThemeSelector
-          currentTheme={themeMode}
-          onSelectTheme={handleThemeChange}
-        />
-      </Modal>
     </View>
   );
 }
@@ -964,12 +907,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     ...Shadows.md,
   },
-  avatarImage: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    ...Shadows.md,
-  },
   avatarText: {
     fontSize: 42,
     fontWeight: Typography.fontWeight.bold,
@@ -979,19 +916,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 0,
     right: 0,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    ...Shadows.lg,
-    borderWidth: 3,
-    borderColor: "rgba(255,255,255,0.3)",
-  },
-  editProfileButton: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
     width: 40,
     height: 40,
     borderRadius: 20,
