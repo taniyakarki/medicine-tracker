@@ -919,6 +919,85 @@ useEffect(() => {
 </TouchableOpacity>
 ```
 
+### 5. FlatList Patterns (React 19)
+
+#### ✅ CORRECT: Direct JSX for ListHeaderComponent
+
+**IMPORTANT**: In React 19, always use **direct JSX** for `ListHeaderComponent` and `ListFooterComponent` instead of function references. This prevents iOS-specific remounting issues that can cause loss of internal component state (like scroll positions).
+
+```typescript
+// ✅ GOOD - Direct JSX (React 19 pattern)
+<FlatList
+  data={items}
+  renderItem={renderItem}
+  keyExtractor={keyExtractor}
+  ListHeaderComponent={
+    <View style={styles.headerContainer}>
+      <SearchBar value={searchQuery} onChangeText={setSearchQuery} />
+      <FilterChips
+        filters={filterOptions}
+        selectedFilters={selectedFilters}
+        onFilterToggle={handleFilterToggle}
+      />
+    </View>
+  }
+  ListEmptyComponent={
+    <EmptyState
+      title="No Items"
+      description="Add your first item"
+    />
+  }
+/>
+```
+
+#### ❌ AVOID: Function References (causes remounting on iOS)
+
+```typescript
+// ❌ BAD - Function reference causes remounting on iOS
+const renderHeader = useCallback(() => (
+  <View style={styles.headerContainer}>
+    <FilterChips {...props} />
+  </View>
+), [deps]);
+
+<FlatList
+  ListHeaderComponent={renderHeader}  // ❌ Causes remounting
+/>
+```
+
+#### Why This Matters
+
+- **iOS Behavior**: iOS aggressively remounts components when using function references
+- **State Loss**: Components with internal state (like scroll position) lose that state on remount
+- **React 19 Optimization**: React 19's compiler automatically optimizes direct JSX without needing manual memoization
+- **Performance**: No performance penalty - React 19 handles it efficiently
+
+#### Performance Optimizations
+
+```typescript
+<FlatList
+  data={items}
+  renderItem={renderItem}
+  keyExtractor={(item) => item.id}
+  // Performance props
+  removeClippedSubviews={true}        // Android optimization
+  maxToRenderPerBatch={10}            // Batch rendering
+  updateCellsBatchingPeriod={50}      // Update frequency
+  initialNumToRender={10}             // Initial render count
+  windowSize={10}                     // Viewport multiplier
+  // Optional: if item heights are fixed
+  getItemLayout={(data, index) => ({
+    length: ITEM_HEIGHT,
+    offset: ITEM_HEIGHT * index,
+    index,
+  })}
+/>
+```
+
+#### Related Fix
+
+See `/docs/fixes/filter-chips-scroll-persistence-ios-fix.md` for the specific issue this pattern solves.
+
 ---
 
 ## Database Schema
@@ -1216,6 +1295,35 @@ import { Dose } from '../../types/database';
 const colorScheme = useColorScheme();
 const isDark = colorScheme === 'dark';
 const colors = isDark ? Colors.dark : Colors.light;
+
+// Dynamic filter generation (from actual data)
+import { MEDICINE_TYPES } from '../../constants/medicine-types';
+
+const filterOptions = useMemo(() => {
+  // Get unique types from actual data
+  const uniqueTypes = Array.from(new Set(medicines.map((m) => m.type)));
+  
+  // Create dynamic filters with icons and counts
+  const typeFilters = uniqueTypes
+    .map((type) => {
+      const medicineTypeDef = MEDICINE_TYPES.find((mt) => mt.value === type);
+      return {
+        id: type,
+        label: medicineTypeDef?.label || type.charAt(0).toUpperCase() + type.slice(1),
+        icon: medicineTypeDef?.icon || "medical-outline",
+        count: medicines.filter((m) => m.type === type).length,
+      };
+    })
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+  
+  // Add static filters (always present)
+  const statusFilters = [
+    { id: "active", label: "Active", icon: "checkmark-circle", count: medicines.filter(m => m.is_active).length },
+    { id: "inactive", label: "Inactive", icon: "close-circle", count: medicines.filter(m => !m.is_active).length },
+  ];
+  
+  return [...typeFilters, ...statusFilters];
+}, [medicines]);
 
 // Data fetching
 const { data, loading, error, refresh } = useData();

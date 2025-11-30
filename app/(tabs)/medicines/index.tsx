@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
 import {
   FlatList,
@@ -16,6 +16,7 @@ import { FilterChips, FilterOption } from "../../../components/ui/FilterChips";
 import { LoadingSpinner } from "../../../components/ui/LoadingSpinner";
 import { SearchBar } from "../../../components/ui/SearchBar";
 import { Colors, Spacing, Typography } from "../../../constants/design";
+import { MEDICINE_TYPES } from "../../../constants/medicine-types";
 import { useMedicines } from "../../../lib/hooks/useMedicines";
 import { MedicineWithNextDose } from "../../../types/medicine";
 
@@ -28,14 +29,6 @@ export default function MedicinesListScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
 
-  // Reload medicines when screen comes into focus
-  useFocusEffect(
-    useCallback(() => {
-      refresh();
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
-  );
-
   const handleRefresh = async () => {
     setRefreshing(true);
     await refresh();
@@ -46,47 +39,37 @@ export default function MedicinesListScreen() {
     router.push("/medicines/add");
   }, [router]);
 
-  // Filter options with counts
+  // Filter options with counts - dynamically generated from medicine data
   const filterOptions: FilterOption[] = useMemo(() => {
-    const typeFilters: FilterOption[] = [
-      {
-        id: "pill",
-        label: "Pill",
-        icon: "medical",
-        count: medicines.filter((m) => m.type === "pill").length,
-      },
-      {
-        id: "liquid",
-        label: "Liquid",
-        icon: "water",
-        count: medicines.filter((m) => m.type === "liquid").length,
-      },
-      {
-        id: "injection",
-        label: "Injection",
-        icon: "fitness",
-        count: medicines.filter((m) => m.type === "injection").length,
-      },
-      {
-        id: "inhaler",
-        label: "Inhaler",
-        icon: "cloud",
-        count: medicines.filter((m) => m.type === "inhaler").length,
-      },
-      {
-        id: "drops",
-        label: "Drops",
-        icon: "rainy",
-        count: medicines.filter((m) => m.type === "drops").length,
-      },
-      {
-        id: "other",
-        label: "Other",
-        icon: "ellipsis-horizontal",
-        count: medicines.filter((m) => m.type === "other").length,
-      },
-    ];
+    // Get unique medicine types from actual data
+    const uniqueTypes = Array.from(new Set(medicines.map((m) => m.type)));
 
+    // Create type filters dynamically based on actual medicine types
+    const typeFilters: FilterOption[] = uniqueTypes
+      .map((type) => {
+        // Find the medicine type definition from constants
+        const medicineTypeDef = MEDICINE_TYPES.find((mt) => mt.value === type);
+
+        return {
+          id: type,
+          label:
+            medicineTypeDef?.label ||
+            type.charAt(0).toUpperCase() + type.slice(1),
+          icon:
+            (medicineTypeDef?.icon as keyof typeof Ionicons.glyphMap) ||
+            "medical-outline",
+          count: medicines.filter((m) => m.type === type).length,
+        };
+      })
+      .sort((a, b) => {
+        // Sort by count (descending), then by label (alphabetically)
+        if (b.count !== a.count) {
+          return b.count - a.count;
+        }
+        return a.label.localeCompare(b.label);
+      });
+
+    // Status filters (always present)
     const statusFilters: FilterOption[] = [
       {
         id: "active",
@@ -102,6 +85,7 @@ export default function MedicinesListScreen() {
       },
     ];
 
+    // Schedule filters (always present)
     const scheduleFilters: FilterOption[] = [
       {
         id: "has_upcoming",
@@ -214,48 +198,6 @@ export default function MedicinesListScreen() {
     );
   }, [handleAddMedicine, searchQuery, selectedFilters.length]);
 
-  const renderHeader = useCallback(
-    () => (
-      <View style={styles.headerContainer}>
-        {/* Search Bar */}
-        <SearchBar
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholder="Search medicines..."
-          onClear={handleClearSearch}
-        />
-
-        {/* Filter Chips */}
-        <FilterChips
-          filters={filterOptions}
-          selectedFilters={selectedFilters}
-          onFilterToggle={handleFilterToggle}
-          onClearAll={handleClearFilters}
-        />
-
-        {/* Results Count */}
-        {(searchQuery.trim() || selectedFilters.length > 0) && (
-          <View style={styles.resultsContainer}>
-            <Text style={[styles.resultsText, { color: colors.textSecondary }]}>
-              {filteredMedicines.length}{" "}
-              {filteredMedicines.length === 1 ? "result" : "results"} found
-            </Text>
-          </View>
-        )}
-      </View>
-    ),
-    [
-      searchQuery,
-      handleClearSearch,
-      filterOptions,
-      selectedFilters,
-      handleFilterToggle,
-      handleClearFilters,
-      filteredMedicines.length,
-      colors.textSecondary,
-    ]
-  );
-
   if (loading && !refreshing) {
     return <LoadingSpinner fullScreen />;
   }
@@ -267,7 +209,37 @@ export default function MedicinesListScreen() {
         renderItem={renderMedicineCard}
         keyExtractor={keyExtractor}
         contentContainerStyle={styles.scrollContent}
-        ListHeaderComponent={renderHeader}
+        ListHeaderComponent={
+          <View style={styles.headerContainer}>
+            {/* Search Bar */}
+            <SearchBar
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search medicines..."
+              onClear={handleClearSearch}
+            />
+
+            {/* Filter Chips */}
+            <FilterChips
+              filters={filterOptions}
+              selectedFilters={selectedFilters}
+              onFilterToggle={handleFilterToggle}
+              onClearAll={handleClearFilters}
+            />
+
+            {/* Results Count */}
+            {(searchQuery.trim() || selectedFilters.length > 0) && (
+              <View style={styles.resultsContainer}>
+                <Text
+                  style={[styles.resultsText, { color: colors.textSecondary }]}
+                >
+                  {filteredMedicines.length}{" "}
+                  {filteredMedicines.length === 1 ? "result" : "results"} found
+                </Text>
+              </View>
+            )}
+          </View>
+        }
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
