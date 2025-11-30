@@ -208,7 +208,8 @@ const styles = StyleSheet.create({
     marginVertical: Spacing.sm,
   },
   scrollContent: {
-    paddingHorizontal: Spacing.md,
+    paddingLeft: 0,
+    paddingRight: Spacing.md,
     gap: Spacing.sm,
   },
   chip: {
