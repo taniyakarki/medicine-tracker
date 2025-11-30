@@ -5,8 +5,10 @@ import React, {
   useEffect,
   useState,
   ReactNode,
+  useMemo,
 } from "react";
 import { useColorScheme as useSystemColorScheme } from "react-native";
+import { Colors } from "../../constants/design";
 
 type ThemeMode = "light" | "dark" | "auto";
 type ActiveTheme = "light" | "dark";
@@ -14,6 +16,8 @@ type ActiveTheme = "light" | "dark";
 interface ThemeContextType {
   themeMode: ThemeMode;
   activeTheme: ActiveTheme;
+  isDark: boolean;
+  colors: typeof Colors.light;
   setThemeMode: (mode: ThemeMode) => Promise<void>;
   isLoading: boolean;
 }
@@ -71,15 +75,24 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     return ["light", "dark", "auto"].includes(value);
   };
 
+  // Memoize computed values
+  const isDark = useMemo(() => activeTheme === "dark", [activeTheme]);
+  const colors = useMemo(() => isDark ? Colors.dark : Colors.light, [isDark]);
+
+  const contextValue = useMemo(
+    () => ({
+      themeMode,
+      activeTheme,
+      isDark,
+      colors,
+      setThemeMode,
+      isLoading,
+    }),
+    [themeMode, activeTheme, isDark, colors, isLoading]
+  );
+
   return (
-    <ThemeContext.Provider
-      value={{
-        themeMode,
-        activeTheme,
-        setThemeMode,
-        isLoading,
-      }}
-    >
+    <ThemeContext.Provider value={contextValue}>
       {children}
     </ThemeContext.Provider>
   );

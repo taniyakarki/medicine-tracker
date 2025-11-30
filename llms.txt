@@ -102,6 +102,8 @@
     useMedicines.ts           # Medicine data hook
     useDoses.ts               # Dose data hook
     useTime.ts                # Time utilities hook
+    useThemeColors.ts         # Theme color hooks (NEW)
+    index.ts                  # Centralized hook exports (NEW)
     TimeProvider.tsx          # Time context provider
   /utils                      # Utility functions
     date-helpers.ts           # Date/time utilities
@@ -110,8 +112,15 @@
     export-helpers.ts         # Data export
     navigation-helpers.ts     # Navigation utilities
     profile-photo-helpers.ts  # Photo handling
-  /context                    # React contexts
-    ThemeContext.tsx          # Theme management
+    medicine-helpers.ts       # Medicine-specific utilities
+    style-helpers.ts          # Style and theming utilities
+    performance-helpers.ts    # Performance optimization utilities
+    error-helpers.ts          # Error handling utilities
+  /context                    # React contexts (NEW GLOBAL CONTEXT SYSTEM)
+    AppContext.tsx            # Global app context (NEW)
+    ThemeContext.tsx          # Theme management (ENHANCED)
+    UserContext.tsx           # User data context (NEW)
+    AppDataContext.tsx        # App data context (NEW)
 
 /constants                    # Design system & constants
   design.ts                   # Colors, typography, spacing, shadows
@@ -243,11 +252,12 @@ Defined for both light and dark modes:
 
 ### 1. Component Structure
 
-#### Functional Components with TypeScript
+#### Functional Components with TypeScript (NEW PATTERN - USE THIS)
 ```typescript
 import React from 'react';
-import { View, Text, StyleSheet, useColorScheme } from 'react-native';
-import { Colors, Typography, Spacing } from '../../constants/design';
+import { View, Text, StyleSheet } from 'react-native';
+import { Typography, Spacing } from '../../constants/design';
+import { useThemeColors } from '../../lib/hooks/useThemeColors';
 
 interface ComponentProps {
   title: string;
@@ -260,9 +270,8 @@ export const Component: React.FC<ComponentProps> = ({
   onPress, 
   disabled = false 
 }) => {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const colors = isDark ? Colors.dark : Colors.light;
+  // ✅ NEW: Use useThemeColors hook instead of manual color scheme checking
+  const colors = useThemeColors();
 
   return (
     <View style={styles.container}>
@@ -285,14 +294,229 @@ const styles = StyleSheet.create({
 ```
 
 #### Key Points:
+- ✅ **NEW**: Use `useThemeColors()` hook for theme colors (replaces manual useColorScheme)
+- ✅ **NEW**: Import from centralized hooks: `import { useThemeColors } from '../../lib/hooks/useThemeColors'`
 - Always use functional components with hooks
 - Define TypeScript interfaces for props
-- Use `useColorScheme()` for theme support
 - Import design tokens from `/constants/design.ts`
 - StyleSheet for static styles, inline for dynamic
 - Export named components (not default)
 
-### 2. Custom Hooks
+#### ❌ OLD PATTERN (Don't use anymore):
+```typescript
+// ❌ DON'T DO THIS ANYMORE
+const colorScheme = useColorScheme();
+const isDark = colorScheme === 'dark';
+const colors = isDark ? Colors.dark : Colors.light;
+
+// ✅ DO THIS INSTEAD
+const colors = useThemeColors();
+```
+
+### 2. Global Context System (NEW)
+
+**Location**: `/lib/context/`
+
+The app uses a centralized context system that provides access to:
+- **Theme**: Colors, dark mode status, theme preferences
+- **User**: User profile data and operations
+- **App Data**: Medicines, doses, and statistics
+
+#### AppContext Structure
+
+```typescript
+// Global context provides three main areas:
+context = {
+  theme: {
+    themeMode: 'light' | 'dark' | 'auto',
+    activeTheme: 'light' | 'dark',
+    isDark: boolean,
+    colors: Colors.light | Colors.dark,
+    setThemeMode: (mode) => Promise<void>,
+    isLoading: boolean,
+  },
+  user: {
+    user: User | null,
+    isLoading: boolean,
+    error: string | null,
+    updateUser: (userData) => Promise<void>,
+    refresh: () => Promise<void>,
+  },
+  appData: {
+    medicines: { data, loading, error, refresh },
+    todayDoses: { data, loading, error, refresh },
+    stats: { data, loading, error, refresh },
+    refreshAll: () => Promise<void>,
+  },
+}
+```
+
+#### Usage: Theme Hooks (Most Common)
+
+**✅ RECOMMENDED: Use specialized theme hooks**
+
+```typescript
+import { useThemeColors, useIsDarkMode } from '../../lib/hooks/useThemeColors';
+
+// Quick access to colors (most common use case)
+const colors = useThemeColors();
+// Returns: Colors.light or Colors.dark based on current theme
+
+// Quick access to dark mode status
+const isDark = useIsDarkMode();
+// Returns: true or false
+
+// Example in component:
+export const MyComponent = () => {
+  const colors = useThemeColors();
+  
+  return (
+    <View style={{ backgroundColor: colors.background }}>
+      <Text style={{ color: colors.text }}>Hello</Text>
+    </View>
+  );
+};
+```
+
+#### Available Theme Hooks
+
+```typescript
+// 1. useThemeColors - Get current theme colors
+import { useThemeColors } from '../../lib/hooks/useThemeColors';
+const colors = useThemeColors();
+
+// 2. useIsDarkMode - Get dark mode status
+import { useIsDarkMode } from '../../lib/hooks/useThemeColors';
+const isDark = useIsDarkMode();
+
+// 3. useThemedStyle - Create memoized themed styles
+import { useThemedStyle } from '../../lib/hooks/useThemeColors';
+const styles = useThemedStyle((colors, isDark) => ({
+  container: {
+    backgroundColor: colors.background,
+    borderColor: colors.border,
+  },
+}));
+
+// 4. useThemedValue - Get different values based on theme
+import { useThemedValue } from '../../lib/hooks/useThemeColors';
+const iconName = useThemedValue('sun', 'moon');
+const opacity = useThemedValue(0.8, 0.6);
+
+// 5. useTheme - Full theme context (less common, use when you need setThemeMode)
+import { useTheme } from '../../lib/hooks';
+const { colors, isDark, themeMode, setThemeMode } = useTheme();
+```
+
+#### Usage: User Context
+
+```typescript
+import { useUser } from '../../lib/hooks';
+
+export const ProfileScreen = () => {
+  const { user, isLoading, error, updateUser, refresh } = useUser();
+
+  const handleUpdate = async () => {
+    await updateUser({ name: 'New Name' });
+  };
+
+  if (isLoading) return <LoadingSpinner />;
+  if (error) return <ErrorMessage message={error} />;
+
+  return <View>{/* Use user data */}</View>;
+};
+```
+
+#### Usage: App Data Context
+
+```typescript
+import { useAppData } from '../../lib/hooks';
+
+export const DashboardScreen = () => {
+  const { medicines, todayDoses, stats, refreshAll } = useAppData();
+
+  // Access medicines
+  const { data: medicineList, loading, error, refresh } = medicines;
+
+  // Access today's doses
+  const { data: doses } = todayDoses;
+
+  // Access statistics
+  const { data: statistics } = stats;
+
+  // Refresh all data at once
+  const handleRefreshAll = async () => {
+    await refreshAll();
+  };
+
+  return <View>{/* Use app data */}</View>;
+};
+```
+
+#### Usage: Complete App Context
+
+```typescript
+import { useApp } from '../../lib/hooks';
+
+export const ComplexScreen = () => {
+  const { theme, user, appData } = useApp();
+
+  // Access everything
+  const colors = theme.colors;
+  const currentUser = user.user;
+  const medicines = appData.medicines.data;
+
+  return <View>{/* Use all context data */}</View>;
+};
+```
+
+#### Context Providers Setup
+
+The app is wrapped with providers in `/app/_layout.tsx`:
+
+```typescript
+import { AppProvider } from '../lib/context/AppContext';
+
+export default function RootLayout() {
+  return (
+    <SafeAreaProvider>
+      <AppProvider>
+        {/* App content */}
+      </AppProvider>
+    </SafeAreaProvider>
+  );
+}
+```
+
+#### Key Benefits
+
+1. **No Manual Theme Checking**: Use `useThemeColors()` instead of `useColorScheme()`
+2. **Centralized State**: All app data accessible from one place
+3. **Automatic Caching**: Data hooks include built-in caching
+4. **Type Safety**: Full TypeScript support with proper types
+5. **Performance**: Memoized values prevent unnecessary re-renders
+6. **Reusability**: Same hooks work everywhere in the app
+
+#### Migration from Old Pattern
+
+```typescript
+// ❌ OLD PATTERN
+import { useColorScheme } from 'react-native';
+import { Colors } from '../../constants/design';
+
+const colorScheme = useColorScheme();
+const isDark = colorScheme === 'dark';
+const colors = isDark ? Colors.dark : Colors.light;
+
+// ✅ NEW PATTERN
+import { useThemeColors } from '../../lib/hooks/useThemeColors';
+
+const colors = useThemeColors();
+```
+
+---
+
+### 3. Custom Hooks
 
 #### Pattern for Data Hooks
 ```typescript
@@ -378,12 +602,45 @@ export const Component = () => {
 };
 ```
 
+#### Utility Categories
+
+**Date Helpers** (`/lib/utils/date-helpers.ts`):
+- `formatTime()`, `formatDate()`, `formatDateTime()`
+- `getStartOfDay()`, `getEndOfDay()`, `getStartOfWeek()`, `getEndOfWeek()`
+- `getTimeUntil()`, `getTimeAgo()`, `isOverdue()`
+
+**Medicine Helpers** (`/lib/utils/medicine-helpers.ts`):
+- `formatMedicineType()` - Formats medicine type for display
+- `getRelativeTime()` - Gets natural language relative time
+- `validateMedicineData()` - Validates medicine input
+
+**Style Helpers** (`/lib/utils/style-helpers.ts`):
+- `getStatusColor()` - Gets color based on status
+- `getStatusIconName()` - Gets icon name for status
+- `createShadow()` - Creates platform-specific shadow
+- `combineStyles()` - Safely combines style objects
+
+**Performance Helpers** (`/lib/utils/performance-helpers.ts`):
+- `debounce()` - Debounces function calls
+- `throttle()` - Throttles function calls
+- `memoize()` - Memoizes expensive computations
+- `isCacheValid()` - Checks cache validity
+- `retryWithBackoff()` - Retries operations with exponential backoff
+
+**Error Helpers** (`/lib/utils/error-helpers.ts`):
+- `formatErrorMessage()` - Formats errors for users
+- `logError()` - Logs errors with context
+- `withErrorHandling()` - Wraps functions with error handling
+- `safeJsonParse()` - Safely parses JSON
+- `withTimeout()` - Adds timeout to async operations
+
 #### Key Points:
 - **NEVER** put helper functions inside components
 - Extract all utilities to `/lib/utils`
 - Make utilities pure functions when possible
 - Properly type inputs and outputs
 - Add JSDoc comments for complex functions
+- Use appropriate utility category for organization
 
 ### 4. Database Operations
 
@@ -853,13 +1110,30 @@ When implementing features, manually test:
 ## Performance Best Practices
 
 1. **Memoization**: Use `useMemo` and `useCallback` appropriately
+   - Use `React.memo` for components that render frequently with same props
+   - Memoize expensive calculations with `useMemo`
+   - Memoize callbacks passed as props with `useCallback`
+   
 2. **Caching**: Implement caching in hooks (30-second default)
+   - Use `isCacheValid()` helper to check cache freshness
+   - Invalidate cache on mutations (create, update, delete)
+   - Use `useRef` to store cache data without triggering re-renders
+   
 3. **Lazy Loading**: Load data as needed, not all at once
+   
 4. **Virtualization**: Use FlatList for long lists
-5. **Image Optimization**: Use `expo-image` for images
+   
+5. **Image Optimization**: Use `expo-image` for images with caching
+   
 6. **Database Indexes**: Add indexes for frequently queried columns
-7. **Debouncing**: Debounce search inputs
-8. **Animations**: Use `react-native-reanimated` for smooth animations
+   
+7. **Debouncing**: Use `debounce()` helper for search inputs and rapid events
+   
+8. **Throttling**: Use `throttle()` helper for scroll and resize events
+   
+9. **Animations**: Use `react-native-reanimated` for smooth animations
+   
+10. **Error Handling**: Use centralized error handling with `formatErrorMessage()` and `logError()`
 
 ---
 
@@ -910,8 +1184,22 @@ import { Input } from '../../components/ui/Input';
 import { useMedicines } from '../../lib/hooks/useMedicines';
 import { useDoses } from '../../lib/hooks/useDoses';
 
-// Utils
+// Date Utils
 import { formatDate, formatTime } from '../../lib/utils/date-helpers';
+
+// Medicine Utils
+import { formatMedicineType, getRelativeTime, validateMedicineData } from '../../lib/utils/medicine-helpers';
+
+// Style Utils
+import { getStatusColor, getStatusIconName, createShadow, combineStyles } from '../../lib/utils/style-helpers';
+
+// Performance Utils
+import { debounce, throttle, memoize, isCacheValid } from '../../lib/utils/performance-helpers';
+
+// Error Utils
+import { formatErrorMessage, logError, withErrorHandling } from '../../lib/utils/error-helpers';
+
+// Validation
 import { validateEmail } from '../../lib/utils/validation';
 
 // Database
@@ -963,6 +1251,36 @@ Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 - Known warnings: `/docs/KNOWN_WARNINGS.md`
 
 ---
+
+**Last Updated**: November 30, 2025
+
+---
+
+## Recent Improvements (November 30, 2025)
+
+### Performance Optimizations
+1. **Enhanced Caching**: All hooks now use `isCacheValid()` helper for consistent cache checking
+2. **Memoization**: Button component optimized with `useMemo` for style calculations
+3. **Component Optimization**: MedicineCard uses `React.memo` with custom comparison
+4. **Cache Invalidation**: Proper cache invalidation on mutations (create, update, delete)
+
+### Code Organization
+1. **New Utility Files**:
+   - `medicine-helpers.ts` - Medicine-specific utilities (formatMedicineType, getRelativeTime, etc.)
+   - `style-helpers.ts` - Style and theming utilities (getStatusColor, createShadow, etc.)
+   - `performance-helpers.ts` - Performance utilities (debounce, throttle, memoize, etc.)
+   - `error-helpers.ts` - Error handling utilities (formatErrorMessage, logError, etc.)
+
+2. **Extracted Helper Functions**: All inline helper functions moved to appropriate utility files
+3. **Centralized Error Handling**: Consistent error formatting and logging across all hooks
+4. **Type Safety**: All utilities properly typed with TypeScript
+
+### Best Practices Applied
+- No helper functions inside components
+- Consistent error handling with `formatErrorMessage()` and `logError()`
+- Performance utilities for debouncing, throttling, and memoization
+- Reusable style helpers for consistent theming
+- Proper cache management with validation helpers
 
 **Last Updated**: November 30, 2025
 

@@ -1,6 +1,7 @@
 import React from "react";
-import { View, ViewStyle, useColorScheme } from "react-native";
-import { BorderRadius, Colors, Shadows, Spacing } from "../../constants/design";
+import { View, ViewStyle } from "react-native";
+import { BorderRadius, Shadows, Spacing } from "../../constants/design";
+import { useThemeColors } from "../../lib/hooks/useThemeColors";
 
 interface CardProps {
   children: React.ReactNode;
@@ -16,9 +17,7 @@ export const Card: React.FC<CardProps> = ({
   padding = "md",
   elevated = true,
 }) => {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
-  const colors = isDark ? Colors.dark : Colors.light;
+  const colors = useThemeColors();
 
   const cardStyle: ViewStyle = {
     backgroundColor: colors.surface,

@@ -13,6 +13,8 @@ import {
 import { getActiveMedicineCount } from '../database/models/medicine';
 import { ensureUserExists } from '../database/models/user';
 import { getStartOfDay, getEndOfDay, getStartOfWeek, getEndOfWeek } from '../utils/date-helpers';
+import { isCacheValid } from '../utils/performance-helpers';
+import { formatErrorMessage, logError } from '../utils/error-helpers';
 
 const CACHE_DURATION = 30000; // 30 seconds
 
@@ -23,11 +25,9 @@ export const useTodayDoses = () => {
   const cacheRef = useRef<{ data: DoseWithMedicine[], timestamp: number } | null>(null);
 
   const loadDoses = useCallback(async (forceRefresh = false) => {
-    const now = Date.now();
-    
     // Return cached data if fresh
     if (!forceRefresh && cacheRef.current && 
-        (now - cacheRef.current.timestamp) < CACHE_DURATION) {
+        isCacheValid(cacheRef.current.timestamp, CACHE_DURATION)) {
       setDoses(cacheRef.current.data);
       setLoading(false);
       return;
@@ -39,12 +39,13 @@ export const useTodayDoses = () => {
       const data = await getTodayDoses(user.id);
       
       // Update cache
-      cacheRef.current = { data, timestamp: now };
+      cacheRef.current = { data, timestamp: Date.now() };
       setDoses(data);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load doses');
-      console.error('Error loading doses:', err);
+      const message = formatErrorMessage(err, 'Failed to load doses');
+      setError(message);
+      logError('useTodayDoses.loadDoses', err);
     } finally {
       setLoading(false);
     }
@@ -70,11 +71,9 @@ export const useUpcomingDoses = (hours: number = 24) => {
   const cacheRef = useRef<{ data: DoseWithMedicine[], timestamp: number } | null>(null);
 
   const loadDoses = useCallback(async (forceRefresh = false) => {
-    const now = Date.now();
-    
     // Return cached data if fresh
     if (!forceRefresh && cacheRef.current && 
-        (now - cacheRef.current.timestamp) < CACHE_DURATION) {
+        isCacheValid(cacheRef.current.timestamp, CACHE_DURATION)) {
       setDoses(cacheRef.current.data);
       setLoading(false);
       return;
@@ -86,12 +85,13 @@ export const useUpcomingDoses = (hours: number = 24) => {
       const data = await getUpcomingDoses(user.id, hours);
       
       // Update cache
-      cacheRef.current = { data, timestamp: now };
+      cacheRef.current = { data, timestamp: Date.now() };
       setDoses(data);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load upcoming doses');
-      console.error('Error loading upcoming doses:', err);
+      const message = formatErrorMessage(err, 'Failed to load upcoming doses');
+      setError(message);
+      logError('useUpcomingDoses.loadDoses', err, { hours });
     } finally {
       setLoading(false);
     }
@@ -117,11 +117,9 @@ export const useRecentActivity = (limit: number = 5) => {
   const cacheRef = useRef<{ data: DoseWithMedicine[], timestamp: number } | null>(null);
 
   const loadActivity = useCallback(async (forceRefresh = false) => {
-    const now = Date.now();
-    
     // Return cached data if fresh
     if (!forceRefresh && cacheRef.current && 
-        (now - cacheRef.current.timestamp) < CACHE_DURATION) {
+        isCacheValid(cacheRef.current.timestamp, CACHE_DURATION)) {
       setActivity(cacheRef.current.data);
       setLoading(false);
       return;
@@ -133,12 +131,13 @@ export const useRecentActivity = (limit: number = 5) => {
       const data = await getRecentDoseActivity(user.id, limit);
       
       // Update cache
-      cacheRef.current = { data, timestamp: now };
+      cacheRef.current = { data, timestamp: Date.now() };
       setActivity(data);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load activity');
-      console.error('Error loading activity:', err);
+      const message = formatErrorMessage(err, 'Failed to load activity');
+      setError(message);
+      logError('useRecentActivity.loadActivity', err, { limit });
     } finally {
       setLoading(false);
     }
@@ -172,11 +171,9 @@ export const useMedicineStats = () => {
   const cacheRef = useRef<{ data: MedicineStats, timestamp: number } | null>(null);
 
   const loadStats = useCallback(async (forceRefresh = false) => {
-    const now = Date.now();
-    
     // Return cached data if fresh
     if (!forceRefresh && cacheRef.current && 
-        (now - cacheRef.current.timestamp) < CACHE_DURATION) {
+        isCacheValid(cacheRef.current.timestamp, CACHE_DURATION)) {
       setStats(cacheRef.current.data);
       setLoading(false);
       return;
@@ -218,12 +215,13 @@ export const useMedicineStats = () => {
       };
 
       // Update cache
-      cacheRef.current = { data: newStats, timestamp: now };
+      cacheRef.current = { data: newStats, timestamp: Date.now() };
       setStats(newStats);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load stats');
-      console.error('Error loading stats:', err);
+      const message = formatErrorMessage(err, 'Failed to load stats');
+      setError(message);
+      logError('useMedicineStats.loadStats', err);
     } finally {
       setLoading(false);
     }
@@ -247,7 +245,8 @@ export const useDoseActions = () => {
     try {
       await markDoseAsTakenDB(doseId, notes);
     } catch (error) {
-      throw new Error('Failed to mark dose as taken');
+      logError('useDoseActions.markAsTaken', error, { doseId, notes });
+      throw new Error(formatErrorMessage(error, 'Failed to mark dose as taken'));
     }
   }, []);
 
@@ -255,7 +254,8 @@ export const useDoseActions = () => {
     try {
       await markDoseAsSkippedDB(doseId, notes);
     } catch (error) {
-      throw new Error('Failed to mark dose as skipped');
+      logError('useDoseActions.markAsSkipped', error, { doseId, notes });
+      throw new Error(formatErrorMessage(error, 'Failed to mark dose as skipped'));
     }
   }, []);
 
@@ -286,8 +286,9 @@ export const useCalendarData = (month: Date) => {
       setData(calendarData);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load calendar data');
-      console.error('Error loading calendar data:', err);
+      const message = formatErrorMessage(err, 'Failed to load calendar data');
+      setError(message);
+      logError('useCalendarData.loadData', err, { year: month.getFullYear(), month: month.getMonth() });
     } finally {
       setLoading(false);
     }

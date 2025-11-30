@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ViewStyle , useColorScheme } from 'react-native';
-import { Colors, Typography, BorderRadius, Spacing, Layout } from '../../constants/design';
+import { View, Text, TouchableOpacity, StyleSheet, ViewStyle } from 'react-native';
+import { Typography, BorderRadius, Spacing, Layout } from '../../constants/design';
 import { Ionicons } from '@expo/vector-icons';
 import { Modal } from './Modal';
+import { useThemeColors } from '../../lib/hooks/useThemeColors';
 
 export interface SelectOption {
   label: string;
@@ -34,9 +35,7 @@ export const Select: React.FC<SelectProps> = ({
   showIcons = false,
 }) => {
   const [modalVisible, setModalVisible] = useState(false);
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const colors = isDark ? Colors.dark : Colors.light;
+  const colors = useThemeColors();
 
   const selectedOption = options.find((opt) => opt.value === value);
 

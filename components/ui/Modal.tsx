@@ -8,9 +8,10 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
- useColorScheme } from 'react-native';
+} from 'react-native';
 import { Colors, Typography, BorderRadius, Spacing, Shadows } from '../../constants/design';
 import { Ionicons } from '@expo/vector-icons';
+import { useThemeColors } from '../../lib/hooks/useThemeColors';
 
 interface ModalProps {
   visible: boolean;
@@ -27,9 +28,7 @@ export const Modal: React.FC<ModalProps> = ({
   children,
   showCloseButton = true,
 }) => {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const colors = isDark ? Colors.dark : Colors.light;
+  const colors = useThemeColors();
 
   return (
     <RNModal

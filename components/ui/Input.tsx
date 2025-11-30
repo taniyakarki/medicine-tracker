@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, TextInput, Text, StyleSheet, TextInputProps, ViewStyle , useColorScheme } from 'react-native';
-import { Colors, Typography, BorderRadius, Spacing, Layout } from '../../constants/design';
+import { View, TextInput, Text, StyleSheet, TextInputProps, ViewStyle } from 'react-native';
+import { Typography, BorderRadius, Spacing, Layout } from '../../constants/design';
+import { useThemeColors } from '../../lib/hooks/useThemeColors';
 
 interface InputProps extends TextInputProps {
   label?: string;
@@ -17,9 +18,7 @@ export const Input: React.FC<InputProps> = ({
   style,
   ...props
 }) => {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const colors = isDark ? Colors.dark : Colors.light;
+  const colors = useThemeColors();
 
   return (
     <View style={[styles.container, containerStyle]}>

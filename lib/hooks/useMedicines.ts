@@ -11,6 +11,8 @@ import {
   deleteMedicine as deleteMedicineDB,
 } from '../database/models/medicine';
 import { ensureUserExists } from '../database/models/user';
+import { isCacheValid } from '../utils/performance-helpers';
+import { formatErrorMessage, logError } from '../utils/error-helpers';
 
 const CACHE_DURATION = 30000; // 30 seconds
 
@@ -21,11 +23,9 @@ export const useMedicines = (includeInactive: boolean = false) => {
   const cacheRef = useRef<{ data: MedicineWithNextDose[], timestamp: number } | null>(null);
 
   const loadMedicines = useCallback(async (forceRefresh = false) => {
-    const now = Date.now();
-    
     // Return cached data if fresh and not forcing refresh
     if (!forceRefresh && cacheRef.current && 
-        (now - cacheRef.current.timestamp) < CACHE_DURATION) {
+        isCacheValid(cacheRef.current.timestamp, CACHE_DURATION)) {
       setMedicines(cacheRef.current.data);
       setLoading(false);
       return;
@@ -39,12 +39,13 @@ export const useMedicines = (includeInactive: boolean = false) => {
         : await getActiveMedicinesWithNextDose(user.id);
       
       // Update cache
-      cacheRef.current = { data, timestamp: now };
+      cacheRef.current = { data, timestamp: Date.now() };
       setMedicines(data);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load medicines');
-      console.error('Error loading medicines:', err);
+      const message = formatErrorMessage(err, 'Failed to load medicines');
+      setError(message);
+      logError('useMedicines.loadMedicines', err, { includeInactive });
     } finally {
       setLoading(false);
     }
@@ -59,27 +60,36 @@ export const useMedicines = (includeInactive: boolean = false) => {
     try {
       const user = await ensureUserExists();
       await createMedicineDB({ ...medicineData, user_id: user.id });
-      await loadMedicines(true); // Force refresh after create
+      // Invalidate cache and refresh
+      cacheRef.current = null;
+      await loadMedicines(true);
     } catch (err) {
-      throw new Error(err instanceof Error ? err.message : 'Failed to create medicine');
+      logError('useMedicines.createMedicine', err, { medicineData });
+      throw new Error(formatErrorMessage(err, 'Failed to create medicine'));
     }
   }, [loadMedicines]);
 
   const updateMedicine = useCallback(async (id: string, medicineData: Partial<Medicine>) => {
     try {
       await updateMedicineDB(id, medicineData);
-      await loadMedicines(true); // Force refresh after update
+      // Invalidate cache and refresh
+      cacheRef.current = null;
+      await loadMedicines(true);
     } catch (err) {
-      throw new Error(err instanceof Error ? err.message : 'Failed to update medicine');
+      logError('useMedicines.updateMedicine', err, { id, medicineData });
+      throw new Error(formatErrorMessage(err, 'Failed to update medicine'));
     }
   }, [loadMedicines]);
 
   const deleteMedicine = useCallback(async (id: string) => {
     try {
       await deleteMedicineDB(id);
-      await loadMedicines(true); // Force refresh after delete
+      // Invalidate cache and refresh
+      cacheRef.current = null;
+      await loadMedicines(true);
     } catch (err) {
-      throw new Error(err instanceof Error ? err.message : 'Failed to delete medicine');
+      logError('useMedicines.deleteMedicine', err, { id });
+      throw new Error(formatErrorMessage(err, 'Failed to delete medicine'));
     }
   }, [loadMedicines]);
 
@@ -106,8 +116,9 @@ export const useMedicine = (id: string) => {
       setMedicine(data);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load medicine');
-      console.error('Error loading medicine:', err);
+      const message = formatErrorMessage(err, 'Failed to load medicine');
+      setError(message);
+      logError('useMedicine.loadMedicine', err, { id });
     } finally {
       setLoading(false);
     }

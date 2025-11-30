@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useMemo, memo } from "react";
-import { Animated, StyleSheet, Text, useColorScheme, View } from "react-native";
+import { Animated, StyleSheet, Text, View } from "react-native";
 import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop } from "react-native-svg";
-import { /* Colors, */ Shadows, Typography } from "../../constants/design";
+import { Shadows, Typography } from "../../constants/design";
+import { useIsDarkMode } from "../../lib/hooks/useThemeColors";
 
 interface ProgressRingProps {
   progress: number; // 0-100
@@ -20,9 +21,7 @@ export const ProgressRing = memo<ProgressRingProps>(function ProgressRing({
   showLabel = false,
   label = "Complete",
 }) {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
-  // const colors = isDark ? Colors.dark : Colors.light;
+  const isDark = useIsDarkMode();
   
   const animatedValue = useRef(new Animated.Value(0)).current;
 

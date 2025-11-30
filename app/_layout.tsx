@@ -1,20 +1,20 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { useEffect, useState } from "react";
-import { Platform, useColorScheme } from "react-native";
+import { Platform } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { Colors } from "../constants/design";
 import { removeDuplicateDoses } from "../lib/database/models/dose";
 import { initDatabase } from "../lib/database/operations";
 import { registerBackgroundFetchAsync } from "../lib/notifications/background-tasks";
 import { setupNotificationListeners } from "../lib/notifications/handlers";
 import { initializeNotifications } from "../lib/notifications/setup";
+import { AppProvider } from "../lib/context/AppContext";
+import { useThemeColors } from "../lib/hooks/useThemeColors";
 
 const ONBOARDING_KEY = "@medicine_tracker_onboarding_complete";
 
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
+function RootLayoutContent() {
+  const colors = useThemeColors();
   const router = useRouter();
   const segments = useSegments();
   const [isReady, setIsReady] = useState(false);
@@ -68,38 +68,46 @@ export default function RootLayout() {
   }
 
   return (
-    <SafeAreaProvider>
-      <Stack
-        screenOptions={{
-          headerStyle: {
-            backgroundColor: colors.background,
-          },
-          headerTintColor: colors.text,
-          headerShadowVisible: false,
-          contentStyle: {
-            backgroundColor: colors.background,
-            flex: 1,
-          },
-          // Prevent flickering during navigation
-          animationEnabled: true,
-          animationTypeForReplace: "push",
-          // Detach previous screen to prevent flickering
-          detachPreviousScreen: Platform.OS === "android",
+    <Stack
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: colors.background,
+        },
+        headerTintColor: colors.text,
+        headerShadowVisible: false,
+        contentStyle: {
+          backgroundColor: colors.background,
+          flex: 1,
+        },
+        // Prevent flickering during navigation
+        animationEnabled: true,
+        animationTypeForReplace: "push",
+        // Detach previous screen to prevent flickering
+        detachPreviousScreen: Platform.OS === "android",
+      }}
+    >
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen
+        name="onboarding/index"
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="notification-screen"
+        options={{
+          presentation: "fullScreenModal",
+          headerShown: false,
         }}
-      >
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="onboarding/index"
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="notification-screen"
-          options={{
-            presentation: "fullScreenModal",
-            headerShown: false,
-          }}
-        />
-      </Stack>
+      />
+    </Stack>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <SafeAreaProvider>
+      <AppProvider>
+        <RootLayoutContent />
+      </AppProvider>
     </SafeAreaProvider>
   );
 }

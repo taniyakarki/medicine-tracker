@@ -1,0 +1,396 @@
+# Context Architecture Diagram
+
+## 🏗️ Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         App Root                                 │
+│                     (app/_layout.tsx)                            │
+│                                                                   │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │              SafeAreaProvider                               │ │
+│  │                                                              │ │
+│  │  ┌────────────────────────────────────────────────────────┐│ │
+│  │  │           AppProvider (NEW)                            ││ │
+│  │  │        (lib/context/AppContext.tsx)                    ││ │
+│  │  │                                                          ││ │
+│  │  │  ┌────────────────────────────────────────────────────┐││ │
+│  │  │  │         ThemeProvider                              │││ │
+│  │  │  │      (lib/context/ThemeContext.tsx)                │││ │
+│  │  │  │                                                      │││ │
+│  │  │  │  • themeMode: 'light' | 'dark' | 'auto'           │││ │
+│  │  │  │  • activeTheme: 'light' | 'dark'                   │││ │
+│  │  │  │  • isDark: boolean                                  │││ │
+│  │  │  │  • colors: Colors.light | Colors.dark              │││ │
+│  │  │  │  • setThemeMode: (mode) => Promise<void>           │││ │
+│  │  │  │                                                      │││ │
+│  │  │  │  ┌──────────────────────────────────────────────┐ │││ │
+│  │  │  │  │       UserProvider                           │ │││ │
+│  │  │  │  │    (lib/context/UserContext.tsx)             │ │││ │
+│  │  │  │  │                                                │ │││ │
+│  │  │  │  │  • user: User | null                          │ │││ │
+│  │  │  │  │  • isLoading: boolean                         │ │││ │
+│  │  │  │  │  • error: string | null                       │ │││ │
+│  │  │  │  │  • updateUser: (data) => Promise<void>        │ │││ │
+│  │  │  │  │  • refresh: () => Promise<void>               │ │││ │
+│  │  │  │  │                                                │ │││ │
+│  │  │  │  │  ┌────────────────────────────────────────┐  │ │││ │
+│  │  │  │  │  │     AppDataProvider                    │  │ │││ │
+│  │  │  │  │  │  (lib/context/AppDataContext.tsx)      │  │ │││ │
+│  │  │  │  │  │                                          │  │ │││ │
+│  │  │  │  │  │  • medicines: { data, loading, error }  │  │ │││ │
+│  │  │  │  │  │  • todayDoses: { data, loading, error } │  │ │││ │
+│  │  │  │  │  │  • stats: { data, loading, error }      │  │ │││ │
+│  │  │  │  │  │  • refreshAll: () => Promise<void>      │  │ │││ │
+│  │  │  │  │  │                                          │  │ │││ │
+│  │  │  │  │  │  ┌──────────────────────────────────┐  │  │ │││ │
+│  │  │  │  │  │  │      App Content                 │  │  │ │││ │
+│  │  │  │  │  │  │   (Screens & Components)         │  │  │ │││ │
+│  │  │  │  │  │  └──────────────────────────────────┘  │  │ │││ │
+│  │  │  │  │  └────────────────────────────────────────┘  │ │││ │
+│  │  │  │  └──────────────────────────────────────────────┘ │││ │
+│  │  │  └────────────────────────────────────────────────────┘││ │
+│  │  └────────────────────────────────────────────────────────┘│ │
+│  └────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 🔌 Hook Access Patterns
+
+### Direct Context Access
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Component                                 │
+│                                                               │
+│  import { useTheme } from '../../lib/hooks';                │
+│                                                               │
+│  const { colors, isDark, setThemeMode } = useTheme();       │
+│                                                               │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │  ThemeContext                                          │  │
+│  │  • Reads from AsyncStorage                             │  │
+│  │  • Monitors system color scheme                        │  │
+│  │  • Memoizes colors and isDark                          │  │
+│  │  • Provides setThemeMode function                      │  │
+│  └───────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Specialized Hook Access (Recommended)
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Component                                 │
+│                                                               │
+│  import { useThemeColors } from '../../lib/hooks/...';      │
+│                                                               │
+│  const colors = useThemeColors();                           │
+│                                                               │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │  useThemeColors Hook                                    │  │
+│  │  ↓                                                       │  │
+│  │  useTheme()                                             │  │
+│  │  ↓                                                       │  │
+│  │  ThemeContext                                           │  │
+│  │  ↓                                                       │  │
+│  │  Returns: colors object                                 │  │
+│  └───────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## 📊 Data Flow
+
+### Theme Change Flow
+```
+User Action
+    ↓
+setThemeMode('dark')
+    ↓
+ThemeContext updates state
+    ↓
+AsyncStorage saves preference
+    ↓
+Context value updates (memoized)
+    ↓
+All components using useThemeColors re-render
+    ↓
+UI updates with new colors
+```
+
+### User Update Flow
+```
+User Action
+    ↓
+updateUser({ name: 'New Name' })
+    ↓
+UserContext calls database
+    ↓
+Database updates record
+    ↓
+Context refreshes user data
+    ↓
+All components using useUser re-render
+    ↓
+UI updates with new user info
+```
+
+### Data Refresh Flow
+```
+Pull to Refresh
+    ↓
+refreshAll()
+    ↓
+AppDataContext triggers all refreshes
+    ↓
+├─ medicines.refresh()
+├─ todayDoses.refresh()
+└─ stats.refresh()
+    ↓
+Each hook invalidates cache
+    ↓
+Database queries execute
+    ↓
+Context values update
+    ↓
+Components re-render with fresh data
+```
+
+## 🎯 Hook Hierarchy
+
+```
+useApp (Complete Context)
+├─ useTheme (Theme Context)
+│  ├─ useThemeColors (Colors only)
+│  ├─ useIsDarkMode (Dark mode only)
+│  ├─ useThemedStyle (Memoized styles)
+│  └─ useThemedValue (Theme-based values)
+├─ useUser (User Context)
+└─ useAppData (App Data Context)
+   ├─ medicines (useMedicines)
+   ├─ todayDoses (useTodayDoses)
+   └─ stats (useMedicineStats)
+```
+
+## 🔄 Component Lifecycle
+
+### Component Mount
+```
+1. Component renders
+2. Hook calls context
+3. Context provides cached/initial value
+4. Component displays data
+5. If loading, show spinner
+6. When data arrives, update display
+```
+
+### Component Update
+```
+1. Context value changes
+2. Hook detects change
+3. Component re-renders
+4. Memoized values prevent unnecessary work
+5. Only affected parts update
+```
+
+## 🎨 Theme System Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    System Theme                              │
+│                  (iOS/Android Settings)                      │
+└────────────────────────┬────────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────────┐
+│              useSystemColorScheme()                          │
+│              (React Native Hook)                             │
+└────────────────────────┬────────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────────┐
+│                  ThemeContext                                │
+│                                                               │
+│  themeMode: 'auto' ──┐                                       │
+│                      ├─→ activeTheme: 'dark'                │
+│  systemScheme: 'dark'┘                                       │
+│                      ↓                                        │
+│  colors: Colors.dark (memoized)                             │
+│  isDark: true (memoized)                                    │
+└────────────────────────┬────────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────────┐
+│              useThemeColors()                                │
+│              Returns: Colors.dark                            │
+└────────────────────────┬────────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────────┐
+│                  Component                                   │
+│  <View style={{ backgroundColor: colors.background }} />    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## 💾 Data Caching Strategy
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Component                                 │
+│  const { medicines } = useAppData();                        │
+└────────────────────────┬────────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────────┐
+│              AppDataContext                                  │
+│  Uses: useMedicines()                                       │
+└────────────────────────┬────────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────────┐
+│              useMedicines Hook                               │
+│                                                               │
+│  cacheRef = { data, timestamp }                             │
+│                                                               │
+│  if (cache valid && !forceRefresh) {                        │
+│    return cached data                                        │
+│  } else {                                                    │
+│    fetch from database                                       │
+│    update cache                                              │
+│    return fresh data                                         │
+│  }                                                            │
+│                                                               │
+│  Cache Duration: 30 seconds                                  │
+└────────────────────────┬────────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────────┐
+│              SQLite Database                                 │
+│  /lib/database/models/medicine.ts                           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## 🔐 Type Safety Flow
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│              /types/database.ts                              │
+│  export interface User { ... }                              │
+└────────────────────────┬────────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────────┐
+│              /lib/context/UserContext.tsx                    │
+│  interface UserContextType {                                │
+│    user: User | null;                                        │
+│    ...                                                        │
+│  }                                                            │
+└────────────────────────┬────────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────────┐
+│              /lib/hooks/index.ts                             │
+│  export { useUser } from '../context/UserContext';         │
+└────────────────────────┬────────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────────┐
+│              Component                                       │
+│  const { user } = useUser();                                │
+│  // user is typed as User | null                            │
+│  // TypeScript provides autocomplete and type checking      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## 📱 Real-World Example
+
+### Dashboard Screen Flow
+```
+┌─────────────────────────────────────────────────────────────┐
+│              DashboardScreen                                 │
+│                                                               │
+│  const colors = useThemeColors();                           │
+│  const { medicines, todayDoses, stats } = useAppData();    │
+│                                                               │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │  Theme                                                  │  │
+│  │  ├─ Background color                                    │  │
+│  │  ├─ Text colors                                         │  │
+│  │  └─ Card colors                                         │  │
+│  └───────────────────────────────────────────────────────┘  │
+│                                                               │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │  Statistics Card                                        │  │
+│  │  ├─ Total medicines: stats.data.totalMedicines         │  │
+│  │  ├─ Today's adherence: stats.data.todayTaken           │  │
+│  │  └─ Current streak: stats.data.currentStreak           │  │
+│  └───────────────────────────────────────────────────────┘  │
+│                                                               │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │  Today's Doses List                                     │  │
+│  │  ├─ Morning: todayDoses.data[0]                        │  │
+│  │  ├─ Afternoon: todayDoses.data[1]                      │  │
+│  │  └─ Evening: todayDoses.data[2]                        │  │
+│  └───────────────────────────────────────────────────────┘  │
+│                                                               │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │  Active Medicines                                       │  │
+│  │  └─ medicines.data.map(m => <MedicineCard />)         │  │
+│  └───────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## 🚀 Performance Optimizations
+
+### Memoization Strategy
+```
+ThemeContext
+├─ useMemo: isDark
+├─ useMemo: colors
+└─ useMemo: contextValue
+    ↓
+useThemeColors
+└─ Returns memoized colors
+    ↓
+Component
+└─ Only re-renders when colors actually change
+```
+
+### Caching Strategy
+```
+useMedicines
+├─ useRef: cacheRef
+├─ Check cache validity (30s)
+├─ Return cached if valid
+└─ Fetch fresh if invalid
+    ↓
+AppDataContext
+└─ Provides cached data to all consumers
+    ↓
+Multiple Components
+└─ Share same cached data
+```
+
+## 📚 File Structure
+
+```
+/lib/context/
+├── AppContext.tsx          # Main orchestrator
+├── ThemeContext.tsx        # Theme management
+├── UserContext.tsx         # User data
+└── AppDataContext.tsx      # App data
+
+/lib/hooks/
+├── useThemeColors.ts       # Theme utility hooks
+├── useMedicines.ts         # Medicine data hooks
+├── useDoses.ts             # Dose data hooks
+└── index.ts                # Centralized exports
+
+/components/
+├── /ui/                    # Use useThemeColors()
+└── /medicine/              # Use useThemeColors()
+
+/app/
+├── _layout.tsx             # AppProvider wrapper
+└── (tabs)/                 # Use all hooks
+```
+
+---
+
+**Key Takeaways:**
+
+1. **Nested Providers**: Context providers wrap each other for layered access
+2. **Specialized Hooks**: Use specific hooks (useThemeColors) over general ones (useTheme)
+3. **Memoization**: Values memoized at context level for performance
+4. **Caching**: Data cached for 30s to reduce database queries
+5. **Type Safety**: Full TypeScript support throughout the chain
+6. **Single Source**: All state managed in one place, accessed anywhere
+

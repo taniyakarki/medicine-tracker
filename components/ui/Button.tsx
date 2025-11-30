@@ -1,19 +1,18 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   ActivityIndicator,
   Text,
   TextStyle,
   TouchableOpacity,
-  useColorScheme,
   ViewStyle,
 } from "react-native";
 import {
   BorderRadius,
-  Colors,
   Layout,
   Spacing,
   Typography,
 } from "../../constants/design";
+import { useThemeColors, useIsDarkMode } from "../../lib/hooks/useThemeColors";
 
 interface ButtonProps {
   title: string;
@@ -27,7 +26,7 @@ interface ButtonProps {
   textStyle?: TextStyle;
 }
 
-export const Button: React.FC<ButtonProps> = ({
+const ButtonComponent: React.FC<ButtonProps> = ({
   title,
   onPress,
   variant = "primary",
@@ -38,11 +37,10 @@ export const Button: React.FC<ButtonProps> = ({
   style,
   textStyle,
 }) => {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
-  const colors = isDark ? Colors.dark : Colors.light;
+  const colors = useThemeColors();
+  const isDark = useIsDarkMode();
 
-  const getButtonStyle = (): ViewStyle => {
+  const buttonStyle = useMemo((): ViewStyle => {
     const baseStyle: ViewStyle = {
       borderRadius: BorderRadius.md,
       alignItems: "center",
@@ -91,9 +89,9 @@ export const Button: React.FC<ButtonProps> = ({
     }
 
     return baseStyle;
-  };
+  }, [size, variant, disabled, fullWidth, colors]);
 
-  const getTextStyle = (): TextStyle => {
+  const textStyleComputed = useMemo((): TextStyle => {
     const baseStyle: TextStyle = {
       fontWeight: Typography.fontWeight.semibold,
     };
@@ -116,11 +114,11 @@ export const Button: React.FC<ButtonProps> = ({
     }
 
     return baseStyle;
-  };
+  }, [size, variant, colors]);
 
   return (
     <TouchableOpacity
-      style={[getButtonStyle(), style]}
+      style={[buttonStyle, style]}
       onPress={onPress}
       disabled={disabled || loading}
       activeOpacity={0.7}
@@ -130,8 +128,12 @@ export const Button: React.FC<ButtonProps> = ({
           color={variant === "ghost" ? colors.primary : "#FFFFFF"}
         />
       ) : (
-        <Text style={[getTextStyle(), textStyle]}>{title}</Text>
+        <Text style={[textStyleComputed, textStyle]}>{title}</Text>
       )}
     </TouchableOpacity>
   );
 };
+
+ButtonComponent.displayName = 'Button';
+
+export const Button = React.memo(ButtonComponent);

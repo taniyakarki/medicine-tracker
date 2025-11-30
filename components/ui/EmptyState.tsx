@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet , useColorScheme } from 'react-native';
-import { Colors, Typography, Spacing } from '../../constants/design';
+import { View, Text, StyleSheet } from 'react-native';
+import { Typography, Spacing } from '../../constants/design';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from './Button';
+import { useThemeColors } from '../../lib/hooks/useThemeColors';
 
 interface EmptyStateProps {
   icon?: keyof typeof Ionicons.glyphMap;
@@ -19,9 +20,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   actionLabel,
   onAction,
 }) => {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const colors = isDark ? Colors.dark : Colors.light;
+  const colors = useThemeColors();
 
   return (
     <View style={styles.container}>
