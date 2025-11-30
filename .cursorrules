@@ -1,0 +1,545 @@
+# Cursor Rules for Medicine Track
+
+## Primary Context Source
+
+**ALWAYS read and follow the guidelines in `llms.txt` before making any code changes.**
+
+The `llms.txt` file contains comprehensive documentation about:
+
+- Project architecture and structure
+- Coding patterns and best practices
+- Component structure guidelines
+- Database patterns
+- Design system tokens
+- Common tasks and solutions
+
+## Core Principles
+
+### 1. Reusability First
+
+- **NEVER** duplicate code - always create reusable components and functions
+- Extract common logic into utilities in `/lib/utils`
+- Create reusable UI components in `/components/ui`
+- Use custom hooks in `/lib/hooks` for shared logic
+- Follow DRY (Don't Repeat Yourself) principle strictly
+
+### 2. Separation of Concerns
+
+- **NEVER** put helper functions inside components
+- **ALWAYS** extract utilities to `/lib/utils`
+- Keep business logic in `/lib` directory
+- Keep UI components in `/components` directory
+- Keep database operations in `/lib/database/models`
+- Keep screens/pages in `/app` directory
+
+### 3. Consistent UI Components
+
+- **ALWAYS** import UI components from `/components/ui`
+- **NEVER** create inline custom UI elements - use existing components
+- If a new UI component is needed, create it in `/components/ui` first
+- All UI components must support dark mode
+- Use design tokens from `/constants/design.ts`
+
+### 4. TypeScript Strict Mode
+
+- **ALWAYS** use proper TypeScript types
+- **NEVER** use `any` type unless absolutely necessary
+- Define interfaces for all component props
+- Define types for all function parameters and returns
+- Export types from `/types` directory
+
+### 5. React Best Practices (React 19)
+
+- Use functional components with hooks
+- Use `useCallback` for memoizing functions
+- Use `useMemo` for expensive calculations
+- Use `useEffect` with proper dependencies
+- Implement proper cleanup in useEffect
+- Use React.memo for expensive components
+
+### 6. React Native Best Practices (0.81.5)
+
+- Use StyleSheet for static styles
+- Use inline styles only for dynamic values
+- Support both iOS and Android
+- Use platform-specific code when necessary
+- Follow React Native performance guidelines
+- Use FlatList for long lists (virtualization)
+
+## Mandatory Patterns
+
+### Component Structure
+
+```typescript
+import React from "react";
+import { View, Text, StyleSheet, useColorScheme } from "react-native";
+import { Colors, Typography, Spacing } from "../../constants/design";
+
+interface ComponentProps {
+  // Define all props with types
+}
+
+export const Component: React.FC<ComponentProps> = ({ props }) => {
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+  const colors = isDark ? Colors.dark : Colors.light;
+
+  // Component logic here
+
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* JSX */}
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  // Static styles here
+});
+```
+
+### Custom Hook Structure
+
+```typescript
+import { useState, useEffect, useCallback } from "react";
+
+export const useCustomHook = (params: Params) => {
+  const [data, setData] = useState<DataType[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true);
+      // Load data
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error message");
+    } finally {
+      setLoading(false);
+    }
+  }, [params]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  return { data, loading, error, refresh: loadData };
+};
+```
+
+### Utility Function Structure
+
+```typescript
+// In /lib/utils/[category]-helpers.ts
+
+/**
+ * Description of what this function does
+ * @param param1 - Description
+ * @param param2 - Description
+ * @returns Description of return value
+ */
+export const utilityFunction = (param1: Type1, param2: Type2): ReturnType => {
+  // Pure function logic
+  return result;
+};
+```
+
+## Design System Usage
+
+### Colors
+
+- **ALWAYS** use colors from `Colors.light` or `Colors.dark`
+- **NEVER** hardcode color values
+- Support dark mode with `useColorScheme()`
+
+```typescript
+const colorScheme = useColorScheme();
+const isDark = colorScheme === "dark";
+const colors = isDark ? Colors.dark : Colors.light;
+```
+
+### Typography
+
+- Use `Typography.fontSize.*` for font sizes
+- Use `Typography.fontWeight.*` for font weights
+- Use `Typography.lineHeight.*` for line heights
+
+### Spacing
+
+- Use `Spacing.*` for all padding and margins
+- Never hardcode spacing values
+
+### Border Radius
+
+- Use `BorderRadius.*` for all border radius values
+
+### Shadows
+
+- Use `Shadows.*` for shadow styles
+
+## File Organization
+
+### Where to Put New Code
+
+#### New Screen/Page
+
+- Location: `/app/[path]/[name].tsx`
+- Use: Default export
+- Pattern: Follow screen structure in `llms.txt`
+
+#### New UI Component
+
+- Location: `/components/ui/[Name].tsx`
+- Use: Named export
+- Pattern: Follow component structure in `llms.txt`
+
+#### New Feature Component
+
+- Location: `/components/[feature]/[Name].tsx`
+- Example: `/components/medicine/MedicineCard.tsx`
+
+#### New Utility Function
+
+- Location: `/lib/utils/[category]-helpers.ts`
+- Example: `/lib/utils/date-helpers.ts`
+
+#### New Custom Hook
+
+- Location: `/lib/hooks/[useName].ts`
+- Example: `/lib/hooks/useMedicines.ts`
+
+#### New Database Model
+
+- Location: `/lib/database/models/[entity].ts`
+- Example: `/lib/database/models/medicine.ts`
+
+#### New Type Definition
+
+- Location: `/types/[category].ts`
+- Example: `/types/medicine.ts`
+
+## Code Quality Standards
+
+### Error Handling
+
+- **ALWAYS** wrap async operations in try/catch
+- **ALWAYS** provide user-friendly error messages
+- **ALWAYS** log errors to console for debugging
+
+```typescript
+try {
+  await operation();
+} catch (err) {
+  const message = err instanceof Error ? err.message : "Operation failed";
+  console.error("Operation error:", err);
+  setError(message);
+}
+```
+
+### Loading States
+
+- **ALWAYS** show loading indicators during async operations
+- Use `LoadingSpinner` component from `/components/ui`
+- Set loading state before and after operations
+
+### Empty States
+
+- **ALWAYS** handle empty data scenarios
+- Use `EmptyState` component from `/components/ui`
+- Provide helpful messages and actions
+
+### Validation
+
+- **ALWAYS** validate user input
+- Use validation functions from `/lib/utils/validation.ts`
+- Show clear error messages for invalid input
+
+## Database Operations
+
+### Never Query Directly in Components
+
+```typescript
+// ❌ BAD
+const Component = () => {
+  useEffect(() => {
+    db.getAllAsync("SELECT * FROM medicines").then(setData);
+  }, []);
+};
+
+// ✅ GOOD
+const Component = () => {
+  const { medicines, loading } = useMedicines();
+};
+```
+
+### Always Use Database Models
+
+- Import from `/lib/database/models/[entity].ts`
+- Use provided CRUD functions
+- Never write raw SQL in components
+
+## Performance Guidelines
+
+### Memoization
+
+- Use `useMemo` for expensive calculations
+- Use `useCallback` for functions passed as props
+- Use `React.memo` for expensive components
+
+### Lists
+
+- Use `FlatList` for long lists (>20 items)
+- Implement `keyExtractor` properly
+- Use `getItemLayout` when item heights are fixed
+
+### Images
+
+- Use `expo-image` instead of `Image`
+- Implement lazy loading for images
+- Optimize image sizes before upload
+
+## Accessibility Requirements
+
+### Interactive Elements
+
+- Add `accessible={true}`
+- Add `accessibilityLabel`
+- Add `accessibilityRole`
+- Add `accessibilityHint` when helpful
+- Ensure minimum tap target: 44x44
+
+### Colors
+
+- Ensure proper contrast ratios
+- Don't rely on color alone for information
+
+## Testing Requirements
+
+### Manual Testing Checklist
+
+Before considering a feature complete, test:
+
+- [ ] Light mode
+- [ ] Dark mode
+- [ ] Loading state
+- [ ] Error state
+- [ ] Empty state
+- [ ] Pull-to-refresh (if applicable)
+- [ ] Navigation flow
+- [ ] Form validation (if applicable)
+- [ ] iOS behavior
+- [ ] Android behavior
+
+## Git Commit Guidelines
+
+### Commit Message Format
+
+```
+type(scope): subject
+
+body (optional)
+```
+
+### Types
+
+- `feat`: New feature
+- `fix`: Bug fix
+- `refactor`: Code refactoring
+- `style`: Code style changes
+- `docs`: Documentation changes
+- `perf`: Performance improvements
+- `test`: Test additions/changes
+
+### Examples
+
+```
+feat(medicines): add medicine color picker component
+fix(doses): resolve timezone issue in dose scheduling
+refactor(utils): extract date formatting to date-helpers
+```
+
+## Documentation Requirements
+
+### When to Update llms.txt
+
+**CRITICAL**: Update `llms.txt` when creating or significantly modifying files:
+
+#### Always Update llms.txt For:
+
+- **New Files**: Any new component, hook, utility, screen, or model
+- **New Patterns**: New architectural patterns or coding conventions
+- **New Utilities**: New helper functions that should be standard
+- **New Components**: New reusable UI or feature components
+- **Project Structure Changes**: New directories or reorganization
+- **New Dependencies**: New packages added to package.json
+- **Design System Changes**: New colors, spacing, typography tokens
+- **Database Schema Changes**: New tables or schema modifications
+- **API Changes**: New endpoints or data models
+
+#### What to Document:
+
+1. **File Purpose**: What the file does and why it exists
+2. **Location**: Where the file is located in the project structure
+3. **Usage Pattern**: How to use the component/hook/utility
+4. **Code Example**: Show the pattern with a code snippet
+5. **Related Files**: What other files it interacts with
+6. **Best Practices**: Any specific guidelines for using it
+
+#### Update Process:
+
+1. Create/modify your file(s)
+2. Open `llms.txt`
+3. Find the appropriate section (or create a new one)
+4. Add/update documentation with:
+   - Clear description
+   - Code example
+   - Usage guidelines
+   - Related patterns
+5. Update the "Last Updated" date at the bottom
+6. Run `npm run sync-llms` to sync to llms.md (if needed)
+
+#### Example Documentation Entry:
+
+```markdown
+### ComponentName (in appropriate section)
+
+**Location**: `/components/ui/ComponentName.tsx`
+
+**Purpose**: Brief description of what it does
+
+**Usage**:
+\`\`\`typescript
+import { ComponentName } from '../../components/ui/ComponentName';
+
+<ComponentName prop1="value" prop2={value} />
+\`\`\`
+
+**Props**:
+
+- `prop1` (string): Description
+- `prop2` (Type): Description
+
+**Notes**: Any special considerations
+```
+
+### Task Completion Documentation
+
+**After completing any task, if documentation was created:**
+
+- Provide a **concise summary** of what was accomplished
+- List **only the key files** created or modified
+- Keep explanations **brief and to the point**
+- Focus on **what changed** and **why it matters**
+- Avoid lengthy explanations unless specifically requested
+
+### Code Comments
+
+- Add JSDoc comments for complex functions
+- Explain "why" not "what" in comments
+- Keep comments up to date with code changes
+
+## Anti-Patterns to Avoid
+
+### ❌ Never Do This
+
+1. Helper functions inside components
+2. Hardcoded colors or spacing
+3. Direct database queries in components
+4. Missing TypeScript types
+5. Unhandled promises
+6. Missing error handling
+7. No loading states
+8. Ignoring dark mode
+9. Duplicate code
+10. Inline custom UI (use components)
+11. Default exports for components (except screens)
+12. `any` types
+13. Missing accessibility attributes
+14. Hardcoded strings (use constants for reusable text)
+15. Side effects without cleanup
+
+### ✅ Always Do This
+
+1. Extract helpers to `/lib/utils`
+2. Use design tokens from `/constants/design.ts`
+3. Use database models and hooks
+4. Proper TypeScript interfaces
+5. async/await with try/catch
+6. Comprehensive error handling
+7. Loading, error, empty states
+8. `useColorScheme()` for theming
+9. Reusable components and functions
+10. Import UI components from `/components/ui`
+11. Named exports for components
+12. Proper types
+13. Accessibility attributes
+14. Constants for reusable text
+15. Cleanup in useEffect
+
+## Special Considerations
+
+### Expo Router (File-based Routing)
+
+- File names determine routes
+- Use `_layout.tsx` for layout configuration
+- Default export for screen components
+- Use `Stack.Screen` for header configuration
+
+### Notifications
+
+- Use functions from `/lib/notifications`
+- Test on real devices (not simulators)
+- Handle permission requests gracefully
+
+### Background Tasks
+
+- Use expo-background-fetch
+- Keep tasks short and efficient
+- Handle task failures gracefully
+
+### SQLite Database
+
+- Use transactions for multiple operations
+- Add indexes for frequently queried columns
+- Handle migration carefully
+
+## Memory Management
+
+### When to Add to llms.txt
+
+If you discover or create:
+
+- New architectural patterns
+- New utility functions that should be standard
+- New component patterns
+- New conventions
+- Important project-specific knowledge
+
+Add it to `llms.txt` in the appropriate section.
+
+## Quick Checklist for Every Change
+
+Before submitting code, verify:
+
+- [ ] Read relevant sections in `llms.txt`
+- [ ] **Updated `llms.txt` if created/modified files** ⚠️ CRITICAL
+- [ ] Followed component/hook/utility patterns
+- [ ] No helper functions in components
+- [ ] Used design tokens (no hardcoded values)
+- [ ] Proper TypeScript types
+- [ ] Error handling implemented
+- [ ] Loading states implemented
+- [ ] Dark mode supported
+- [ ] Accessibility attributes added
+- [ ] No code duplication
+- [ ] Imported UI components from `/components/ui`
+- [ ] Tested in light and dark mode
+- [ ] No console errors or warnings
+- [ ] Run `npm run sync-llms` to sync llms.txt to llms.md
+
+## Summary
+
+**The golden rule**: When in doubt, check `llms.txt` first. It contains the comprehensive guide to this codebase. These rules enforce the patterns documented there and ensure consistency across all development.
+
+Remember: This project prioritizes **reusability**, **consistency**, and **maintainability**. Every piece of code should be written with these principles in mind.

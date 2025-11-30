@@ -16,7 +16,8 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "build:local": "eas build --platform android --profile preview --local"
+    "build:local": "eas build --platform android --profile preview --local",
+    "sync-llms": "node ./scripts/sync-llms.js"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
