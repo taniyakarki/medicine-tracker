@@ -239,3 +239,4 @@ memo(Component); // Allows internal updates while memoizing props
 - Better UX with fresh information
 - Consistent with medicine details screen
 
+

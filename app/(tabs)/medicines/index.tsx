@@ -237,7 +237,8 @@ export default function MedicinesListScreen() {
         {(searchQuery.trim() || selectedFilters.length > 0) && (
           <View style={styles.resultsContainer}>
             <Text style={[styles.resultsText, { color: colors.textSecondary }]}>
-              {filteredMedicines.length} {filteredMedicines.length === 1 ? "result" : "results"} found
+              {filteredMedicines.length}{" "}
+              {filteredMedicines.length === 1 ? "result" : "results"} found
             </Text>
           </View>
         )}

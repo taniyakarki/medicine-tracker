@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import React from "react";
+import React, { useRef } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -30,7 +30,7 @@ interface FilterChipsProps {
   showClearAll?: boolean;
 }
 
-export const FilterChips: React.FC<FilterChipsProps> = ({
+const FilterChipsComponent: React.FC<FilterChipsProps> = ({
   filters,
   selectedFilters,
   onFilterToggle,
@@ -39,15 +39,56 @@ export const FilterChips: React.FC<FilterChipsProps> = ({
 }) => {
   const colorScheme = useColorScheme();
   const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
+  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollPositionRef = useRef(0);
 
   const hasActiveFilters = selectedFilters.length > 0;
+
+  const handleScroll = (event: any) => {
+    scrollPositionRef.current = event.nativeEvent.contentOffset.x;
+  };
+
+  const handleFilterPress = (filterId: string) => {
+    // Store current scroll position
+    const currentPosition = scrollPositionRef.current;
+
+    // Call the toggle function
+    onFilterToggle(filterId);
+
+    // Restore scroll position after state update
+    setTimeout(() => {
+      scrollViewRef.current?.scrollTo({
+        x: currentPosition,
+        animated: false,
+      });
+    }, 0);
+  };
+
+  const handleClearPress = () => {
+    // Store current scroll position
+    const currentPosition = scrollPositionRef.current;
+
+    // Call the clear function
+    onClearAll?.();
+
+    // Restore scroll position after state update
+    setTimeout(() => {
+      scrollViewRef.current?.scrollTo({
+        x: currentPosition,
+        animated: false,
+      });
+    }, 0);
+  };
 
   return (
     <View style={styles.container}>
       <ScrollView
+        ref={scrollViewRef}
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
       >
         {filters.map((filter) => {
           const isSelected = selectedFilters.includes(filter.id);
@@ -64,7 +105,7 @@ export const FilterChips: React.FC<FilterChipsProps> = ({
                   borderColor: isSelected ? colors.primary : colors.border,
                 },
               ]}
-              onPress={() => onFilterToggle(filter.id)}
+              onPress={() => handleFilterPress(filter.id)}
               activeOpacity={0.7}
             >
               {filter.icon && (
@@ -122,7 +163,7 @@ export const FilterChips: React.FC<FilterChipsProps> = ({
                 borderColor: colors.danger,
               },
             ]}
-            onPress={onClearAll}
+            onPress={handleClearPress}
             activeOpacity={0.7}
           >
             <Ionicons
@@ -147,6 +188,22 @@ export const FilterChips: React.FC<FilterChipsProps> = ({
     </View>
   );
 };
+
+// Memoize the component to prevent unnecessary re-renders
+export const FilterChips = React.memo(
+  FilterChipsComponent,
+  (prevProps, nextProps) => {
+    // Custom comparison function - only re-render if these props actually change
+    return (
+      prevProps.selectedFilters.length === nextProps.selectedFilters.length &&
+      prevProps.selectedFilters.every(
+        (filter, index) => filter === nextProps.selectedFilters[index]
+      ) &&
+      prevProps.filters.length === nextProps.filters.length &&
+      prevProps.showClearAll === nextProps.showClearAll
+    );
+  }
+);
 
 const styles = StyleSheet.create({
   container: {
@@ -188,4 +245,3 @@ const styles = StyleSheet.create({
     marginLeft: Spacing.xs,
   },
 });
-

@@ -250,3 +250,4 @@ useEffect(() => {
 3. `components/medicine/MedicineCard.tsx` - Uses 5-minute updates
 4. `docs/performance-optimizations.md` - This documentation
 
+
