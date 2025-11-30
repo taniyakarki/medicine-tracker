@@ -32,22 +32,22 @@ export const setupNotificationListeners = () => {
       try {
         switch (actionIdentifier) {
           case "take":
-            await handleTakeMedicine(doseId);
+            await handleTakeMedicine(String(doseId));
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             break;
 
           case "snooze":
             await handleSnoozeMedicine(
-              doseId,
-              medicineId,
-              medicineName,
-              dosage
+              String(doseId),
+              String(medicineId),
+              String(medicineName),
+              String(dosage)
             );
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
             break;
 
           case "skip":
-            await handleSkipMedicine(doseId);
+            await handleSkipMedicine(String(doseId));
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
             break;
 
@@ -88,7 +88,7 @@ const handleSnoozeMedicine = async (
 ) => {
   try {
     // Snooze for 10 minutes
-    await snoozeNotification(doseId, medicineId, medicineName, dosage, 10);
+    await snoozeNotification(doseId, medicineId, medicineName, dosage);
     console.log("Medicine snoozed:", doseId);
   } catch (error) {
     console.error("Error snoozing medicine:", error);

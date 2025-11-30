@@ -1,5 +1,5 @@
 import { Stack } from "expo-router";
-import { Platform, useColorScheme } from "react-native";
+import { useColorScheme } from "react-native";
 import { Colors } from "../../../constants/design";
 
 export default function ProfileLayout() {
@@ -19,10 +19,7 @@ export default function ProfileLayout() {
           flex: 1,
         },
         // Prevent flickering during navigation
-        animationEnabled: true,
-        animationTypeForReplace: "push",
-        // Detach previous screen to prevent flickering
-        detachPreviousScreen: Platform.OS === "android",
+        animation: "default",
       }}
     >
       <Stack.Screen name="index" />

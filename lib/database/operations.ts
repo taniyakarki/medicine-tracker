@@ -8,54 +8,115 @@ import {
 } from "./schema";
 
 let dbInstance: SQLite.SQLiteDatabase | null = null;
+let isInitializing = false;
+let initializationPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
-export const initDatabase = async (): Promise<SQLite.SQLiteDatabase> => {
+export const initDatabase = async (
+  retryCount: number = 0
+): Promise<SQLite.SQLiteDatabase> => {
+  // If already initialized, return the instance
   if (dbInstance) {
+    console.log("Database already initialized, reusing instance");
     return dbInstance;
   }
 
-  try {
-    const db = await SQLite.openDatabaseAsync(DATABASE_NAME);
-
-    // Create tables
-    await createTables(db);
-
-    // Get version before migrations
-    const versionBefore = await getCurrentVersion(db);
-
-    // Run migrations (this will also set the version)
-    await runMigrations(db);
-
-    // Get version after migrations
-    const versionAfter = await getCurrentVersion(db);
-
-    // Only force ensure columns if migration just ran or version is less than 3
-    if (versionBefore < 3 || versionAfter < 3) {
-      console.log("Ensuring user profile columns exist...");
-      await ensureUserProfileColumns(db);
-    }
-
-    dbInstance = db;
-    console.log("Database initialized successfully");
-    return db;
-  } catch (error) {
-    console.error("Error initializing database:", error);
-    throw error;
+  // If currently initializing, wait for that to complete
+  if (isInitializing && initializationPromise) {
+    console.log("Database initialization in progress, waiting...");
+    return initializationPromise;
   }
+
+  const MAX_RETRIES = 3;
+  const RETRY_DELAY = 1000; // 1 second
+
+  // Mark as initializing
+  isInitializing = true;
+
+  initializationPromise = (async () => {
+    try {
+      console.log(
+        `Initializing database (attempt ${retryCount + 1}/${
+          MAX_RETRIES + 1
+        })...`
+      );
+
+      const db = await SQLite.openDatabaseAsync(DATABASE_NAME);
+
+      // Create tables
+      await createTables(db);
+
+      // Get version before migrations
+      const versionBefore = await getCurrentVersion(db);
+
+      // Run migrations (this will also set the version)
+      await runMigrations(db);
+
+      // Get version after migrations
+      const versionAfter = await getCurrentVersion(db);
+
+      // Only force ensure columns if migration just ran or version is less than 4
+      if (versionBefore < 4 || versionAfter < 4) {
+        console.log("Ensuring user profile columns exist...");
+        await ensureUserProfileColumns(db);
+      }
+
+      dbInstance = db;
+      isInitializing = false;
+      console.log("Database initialized successfully");
+      return db;
+    } catch (error) {
+      console.error(
+        `Error initializing database (attempt ${retryCount + 1}):`,
+        error
+      );
+
+      // If we haven't exceeded max retries, try again
+      if (retryCount < MAX_RETRIES) {
+        console.log(`Retrying database initialization in ${RETRY_DELAY}ms...`);
+        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
+        isInitializing = false;
+        initializationPromise = null;
+        return initDatabase(retryCount + 1);
+      }
+
+      // If all retries failed, reset and throw the error
+      isInitializing = false;
+      initializationPromise = null;
+      console.error("Failed to initialize database after all retries");
+      throw error;
+    }
+  })();
+
+  return initializationPromise;
 };
 
 export const getDatabase = async (): Promise<SQLite.SQLiteDatabase> => {
+  // If not initialized, initialize it
   if (!dbInstance) {
+    console.log("Database not initialized, initializing now...");
     return await initDatabase();
   }
+
+  // Return the cached instance
   return dbInstance;
 };
 
 export const closeDatabase = async () => {
   if (dbInstance) {
-    await dbInstance.closeAsync();
-    dbInstance = null;
+    try {
+      await dbInstance.closeAsync();
+    } catch (error) {
+      console.error("Error closing database:", error);
+    } finally {
+      dbInstance = null;
+    }
   }
+};
+
+export const resetDatabase = async (): Promise<void> => {
+  console.log("Resetting database instance...");
+  await closeDatabase();
+  dbInstance = null;
 };
 
 // Generic CRUD operations
@@ -134,12 +195,24 @@ export const getCurrentTimestamp = (): string => {
 // Generic insert function
 export const insert = async <T extends Record<string, any>>(
   table: string,
-  data: Omit<T, "id" | "created_at"> & { id?: string; created_at?: string }
+  data: Omit<T, "id" | "created_at" | "updated_at"> & { id?: string; created_at?: string; updated_at?: string }
 ): Promise<string> => {
   const id = data.id || generateUUID();
   const created_at = data.created_at || getCurrentTimestamp();
 
-  const fullData = { ...data, id, created_at };
+  // Only add updated_at for tables that have this column
+  const tablesWithUpdatedAt = [
+    "users",
+    "medicines",
+    "schedules",
+    "notification_settings",
+  ];
+  const shouldAddUpdatedAt = tablesWithUpdatedAt.includes(table);
+
+  const fullData = shouldAddUpdatedAt
+    ? { ...data, id, created_at, updated_at: data.updated_at || getCurrentTimestamp() }
+    : { ...data, id, created_at };
+
   const columns = Object.keys(fullData);
   const placeholders = columns.map(() => "?").join(", ");
   const values = columns.map((col) => fullData[col]);
@@ -148,8 +221,15 @@ export const insert = async <T extends Record<string, any>>(
     ", "
   )}) VALUES (${placeholders})`;
 
-  await executeUpdate(query, values);
-  return id;
+  try {
+    await executeUpdate(query, values);
+    return id;
+  } catch (error) {
+    console.error(`Error inserting into ${table}:`, error);
+    console.error(`Query: ${query}`);
+    console.error(`Values:`, values);
+    throw error;
+  }
 };
 
 // Generic update function
@@ -189,7 +269,7 @@ export const update = async <T extends Record<string, any>>(
 
   const columns = Object.keys(fullData);
   const setClause = columns.map((col) => `${col} = ?`).join(", ");
-  const values = [...columns.map((col) => fullData[col]), id];
+  const values = [...columns.map((col) => (fullData as any)[col]), id];
 
   const query = `UPDATE ${table} SET ${setClause} WHERE id = ?`;
 

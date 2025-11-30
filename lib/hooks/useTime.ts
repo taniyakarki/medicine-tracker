@@ -23,8 +23,8 @@ export const useTime = (updateInterval: number = 300000) => {
   const sharedTimeContext = TimeContext ? useContext(TimeContext) : undefined;
   
   // Fallback: create own timer if not in TimeProvider
-  const [fallbackTime, setFallbackTime] = useState(() => new Date());
-  const intervalRef = useRef<NodeJS.Timeout>();
+  const [fallbackTime, setFallbackTime] = useState<Date>(() => new Date());
+  const intervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
   useEffect(() => {
     if (!sharedTimeContext) {
@@ -33,7 +33,7 @@ export const useTime = (updateInterval: number = 300000) => {
 
       intervalRef.current = setInterval(() => {
         setFallbackTime(new Date());
-      }, updateInterval);
+      }, updateInterval) as any;
 
       return () => {
         if (intervalRef.current) {

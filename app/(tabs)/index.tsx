@@ -46,7 +46,8 @@ import { DoseWithMedicine } from "../../types/medicine";
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme();
-  const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
+  const isDark = colorScheme === "dark";
+  const colors = isDark ? Colors.dark : Colors.light;
 
   const {
     stats,
@@ -206,9 +207,9 @@ export default function HomeScreen() {
         <View style={styles.progressCard}>
           <LinearGradient
             colors={
-              colorScheme === "dark"
+              (colorScheme === "dark"
                 ? Gradients.dark.progress
-                : Gradients.light.progress
+                : Gradients.light.progress) as unknown as readonly [string, string, ...string[]]
             }
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1.2 }}
@@ -385,9 +386,9 @@ export default function HomeScreen() {
           <View style={styles.quickStatCard}>
             <LinearGradient
               colors={
-                colorScheme === "dark"
+                (colorScheme === "dark"
                   ? Gradients.dark.streak
-                  : Gradients.light.streak
+                  : Gradients.light.streak) as unknown as readonly [string, string, ...string[]]
               }
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
@@ -411,9 +412,9 @@ export default function HomeScreen() {
           <View style={styles.quickStatCard}>
             <LinearGradient
               colors={
-                colorScheme === "dark"
+                (colorScheme === "dark"
                   ? Gradients.dark.adherence
-                  : Gradients.light.adherence
+                  : Gradients.light.adherence) as unknown as readonly [string, string, ...string[]]
               }
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
@@ -437,9 +438,9 @@ export default function HomeScreen() {
           <View style={styles.quickStatCard}>
             <LinearGradient
               colors={
-                colorScheme === "dark"
+                (colorScheme === "dark"
                   ? Gradients.dark.active
-                  : Gradients.light.active
+                  : Gradients.light.active) as unknown as readonly [string, string, ...string[]]
               }
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
@@ -533,10 +534,10 @@ export default function HomeScreen() {
                     {
                       backgroundColor:
                         dose.status === "taken"
-                          ? colors.success + "20"
+                          ? isDark ? colors.success + "20" : "#D1FAE5"
                           : dose.status === "missed"
-                          ? colors.danger + "20"
-                          : colors.warning + "20",
+                          ? isDark ? colors.danger + "20" : "#FEE2E2"
+                          : isDark ? colors.warning + "20" : "#FEF3C7",
                     },
                   ]}
                 >
@@ -548,7 +549,7 @@ export default function HomeScreen() {
                         ? "close-circle"
                         : "time"
                     }
-                    size={28}
+                    size={24}
                     color={
                       dose.status === "taken"
                         ? colors.success
@@ -572,10 +573,10 @@ export default function HomeScreen() {
                         {
                           backgroundColor:
                             dose.status === "taken"
-                              ? colors.success + "20"
+                              ? isDark ? colors.success + "20" : "#D1FAE5"
                               : dose.status === "missed"
-                              ? colors.danger + "20"
-                              : colors.warning + "20",
+                              ? isDark ? colors.danger + "20" : "#FEE2E2"
+                              : isDark ? colors.warning + "20" : "#FEF3C7",
                         },
                       ]}
                     >
@@ -787,19 +788,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: Spacing.md,
     gap: Spacing.md,
-    borderRadius: BorderRadius.lg,
+    borderRadius: BorderRadius.xl,
     ...Shadows.sm,
   },
   activityIconContainer: {
     width: 56,
     height: 56,
-    borderRadius: BorderRadius.xl,
+    borderRadius: 28,
     alignItems: "center",
     justifyContent: "center",
-    ...Shadows.sm,
   },
   activityContent: {
     flex: 1,
+    justifyContent: "center",
   },
   activityHeader: {
     flexDirection: "row",

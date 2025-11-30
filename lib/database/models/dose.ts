@@ -342,7 +342,7 @@ export const removeDuplicateDoses = async (): Promise<number> => {
   );
 
   // Return the number of deleted rows
-  return result.changes || 0;
+  return (result as any).changes || 0;
 };
 
 /**

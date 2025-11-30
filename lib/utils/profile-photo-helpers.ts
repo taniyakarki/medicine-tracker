@@ -1,9 +1,13 @@
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as FileSystem from "expo-file-system";
+
+// Type workaround for expo-file-system v19
+// @ts-ignore - documentDirectory exists at runtime
+const documentDirectory = FileSystem.documentDirectory as string;
 import { Alert } from "react-native";
 
-const PROFILE_PHOTOS_DIR = `${FileSystem.documentDirectory}profile_photos/`;
+const PROFILE_PHOTOS_DIR = `${documentDirectory}profile_photos/`;
 
 /**
  * Ensure the profile photos directory exists

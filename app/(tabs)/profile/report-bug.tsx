@@ -135,7 +135,7 @@ export default function ReportBugScreen() {
 
           {/* Info Banner */}
           <Card
-            style={[styles.infoBanner, { backgroundColor: colors.info + "15" }]}
+            style={[styles.infoBanner, { backgroundColor: colors.info + "15" }] as any}
           >
             <Ionicons name="information-circle" size={24} color={colors.info} />
             <View style={styles.infoBannerText}>

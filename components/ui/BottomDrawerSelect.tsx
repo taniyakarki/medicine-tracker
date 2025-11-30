@@ -95,7 +95,7 @@ export const BottomDrawerSelect: React.FC<BottomDrawerSelectProps> = ({
         accessibilityRole="button"
       >
         {renderTrigger ? (
-          renderTrigger(selectedOption, isOpen)
+          renderTrigger(selectedOption ?? null, isOpen)
         ) : (
           <>
             {selectedOption ? (

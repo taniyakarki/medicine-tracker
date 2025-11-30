@@ -157,13 +157,13 @@ const calculateNextDose = (
   for (const schedule of schedules) {
     if (!schedule.is_active) continue;
 
-    if (schedule.interval_hours) {
-      // For interval-based schedules
-      try {
-        const intervalHours = schedule.interval_hours;
-        const startTime = schedule.start_time || schedule.time;
-        
-        if (!startTime) continue;
+      if (schedule.interval_hours) {
+        // For interval-based schedules
+        try {
+          const intervalHours = schedule.interval_hours;
+          const startTime = schedule.time;
+          
+          if (!startTime) continue;
         
         const [startHours, startMinutes] = startTime.split(":").map(Number);
         

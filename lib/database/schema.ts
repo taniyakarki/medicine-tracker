@@ -1,7 +1,7 @@
 import * as SQLite from "expo-sqlite";
 
 export const DATABASE_NAME = "medicine_tracker.db";
-export const DATABASE_VERSION = 3;
+export const DATABASE_VERSION = 4;
 
 export const createTables = async (db: SQLite.SQLiteDatabase) => {
   await db.execAsync(`
@@ -21,6 +21,7 @@ export const createTables = async (db: SQLite.SQLiteDatabase) => {
       allergies TEXT,
       medical_conditions TEXT,
       profile_image TEXT,
+      theme_preference TEXT DEFAULT 'auto',
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
@@ -300,6 +301,50 @@ export const migrations: Migration[] = [
 
         INSERT INTO users_new (id, name, email, phone, profile_image, created_at, updated_at)
         SELECT id, name, email, phone, profile_image, created_at, updated_at FROM users;
+
+        DROP TABLE users;
+        ALTER TABLE users_new RENAME TO users;
+      `);
+    },
+  },
+  {
+    version: 4,
+    up: async (db) => {
+      // Add theme_preference column to users table
+      try {
+        await db.execAsync(
+          `ALTER TABLE users ADD COLUMN theme_preference TEXT DEFAULT 'auto';`
+        );
+        console.log("Added theme_preference column to users table");
+      } catch (e) {
+        console.log("theme_preference column may already exist");
+      }
+    },
+    down: async (db) => {
+      // SQLite doesn't support DROP COLUMN directly
+      // We need to recreate the table without the theme_preference column
+      await db.execAsync(`
+        CREATE TABLE IF NOT EXISTS users_new (
+          id TEXT PRIMARY KEY NOT NULL,
+          name TEXT NOT NULL,
+          email TEXT,
+          phone TEXT,
+          date_of_birth TEXT,
+          gender TEXT,
+          address TEXT,
+          blood_type TEXT,
+          allergies TEXT,
+          medical_conditions TEXT,
+          profile_image TEXT,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
+        INSERT INTO users_new 
+        SELECT id, name, email, phone, date_of_birth, gender, address, 
+               blood_type, allergies, medical_conditions, profile_image, 
+               created_at, updated_at 
+        FROM users;
 
         DROP TABLE users;
         ALTER TABLE users_new RENAME TO users;

@@ -80,10 +80,7 @@ function RootLayoutContent() {
           flex: 1,
         },
         // Prevent flickering during navigation
-        animationEnabled: true,
-        animationTypeForReplace: "push",
-        // Detach previous screen to prevent flickering
-        detachPreviousScreen: Platform.OS === "android",
+        animation: "default",
       }}
     >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

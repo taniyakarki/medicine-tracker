@@ -1,5 +1,7 @@
 import { Medicine, Schedule, Dose } from './database';
 
+export { Medicine, Schedule, Dose };
+
 export type MedicineType = 'pill' | 'liquid' | 'injection' | 'inhaler' | 'drops' | 'other';
 export type FrequencyType = 'daily' | 'specific_days' | 'interval';
 export type DoseStatus = 'scheduled' | 'taken' | 'missed' | 'skipped';

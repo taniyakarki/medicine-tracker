@@ -61,8 +61,11 @@ export const MedicineTypeIcon: React.FC<MedicineTypeIconProps> = ({
     }
   };
 
+  // Create appropriate background color based on theme
+  const backgroundColor = isDark ? color + "20" : color + "15";
+
   return (
-    <View style={[styles.container, { backgroundColor: color + "20" }]}>
+    <View style={[styles.container, { backgroundColor }]}>
       <Ionicons name={getIconName()} size={size} color={color} />
     </View>
   );
@@ -70,9 +73,9 @@ export const MedicineTypeIcon: React.FC<MedicineTypeIconProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: "center",
     justifyContent: "center",
   },

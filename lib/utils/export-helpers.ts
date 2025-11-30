@@ -1,4 +1,10 @@
 import * as FileSystem from "expo-file-system";
+
+// Type workaround for expo-file-system v19
+// @ts-ignore - documentDirectory exists at runtime
+const documentDirectory = FileSystem.documentDirectory as string;
+// @ts-ignore - EncodingType exists at runtime
+const EncodingType = FileSystem.EncodingType as { UTF8: string };
 import * as Sharing from "expo-sharing";
 import { DoseWithMedicine } from "../../types/medicine";
 import { Medicine } from "../../types/database";
@@ -53,9 +59,9 @@ export const exportDosesAsCSV = async (
     ].join("\n");
 
     // Save to file
-    const fileUri = `${FileSystem.documentDirectory}${fileName}`;
+    const fileUri = `${documentDirectory}${fileName}`;
     await FileSystem.writeAsStringAsync(fileUri, csvContent, {
-      encoding: FileSystem.EncodingType.UTF8,
+      encoding: "utf8",
     });
 
     // Share the file
@@ -117,9 +123,9 @@ export const exportMedicinesAsCSV = async (
     ].join("\n");
 
     // Save to file
-    const fileUri = `${FileSystem.documentDirectory}${fileName}`;
+    const fileUri = `${documentDirectory}${fileName}`;
     await FileSystem.writeAsStringAsync(fileUri, csvContent, {
-      encoding: FileSystem.EncodingType.UTF8,
+      encoding: "utf8",
     });
 
     // Share the file
@@ -219,9 +225,9 @@ For questions or support, please contact your healthcare provider.
 `;
 
     // Save to file
-    const fileUri = `${FileSystem.documentDirectory}${fileName}`;
+    const fileUri = `${documentDirectory}${fileName}`;
     await FileSystem.writeAsStringAsync(fileUri, report, {
-      encoding: FileSystem.EncodingType.UTF8,
+      encoding: "utf8",
     });
 
     // Share the file
@@ -263,9 +269,9 @@ export const exportAllDataAsJSON = async (
     );
 
     // Save to file
-    const fileUri = `${FileSystem.documentDirectory}${fileName}`;
+    const fileUri = `${documentDirectory}${fileName}`;
     await FileSystem.writeAsStringAsync(fileUri, jsonContent, {
-      encoding: FileSystem.EncodingType.UTF8,
+      encoding: "utf8",
     });
 
     // Share the file

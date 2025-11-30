@@ -24,8 +24,8 @@ export const TimeProvider: React.FC<TimeProviderProps> = ({
   children, 
   updateInterval = 300000 // Default: 5 minutes
 }) => {
-  const [currentTime, setCurrentTime] = useState(() => new Date());
-  const intervalRef = useRef<NodeJS.Timeout>();
+  const [currentTime, setCurrentTime] = useState<Date>(() => new Date());
+  const intervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
   useEffect(() => {
     // Update time immediately
@@ -34,7 +34,7 @@ export const TimeProvider: React.FC<TimeProviderProps> = ({
     // Set up interval to update time
     intervalRef.current = setInterval(() => {
       setCurrentTime(new Date());
-    }, updateInterval);
+    }, updateInterval) as any;
 
     return () => {
       if (intervalRef.current) {
@@ -58,8 +58,8 @@ export const useSharedTime = (): Date => {
   const context = useContext(TimeContext);
   
   // Fallback: create own timer if not in provider
-  const [fallbackTime, setFallbackTime] = useState(() => new Date());
-  const intervalRef = useRef<NodeJS.Timeout>();
+  const [fallbackTime, setFallbackTime] = useState<Date>(() => new Date());
+  const intervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
   useEffect(() => {
     if (!context) {
@@ -68,7 +68,7 @@ export const useSharedTime = (): Date => {
       
       intervalRef.current = setInterval(() => {
         setFallbackTime(new Date());
-      }, 300000); // 5 minutes
+      }, 300000) as any; // 5 minutes
 
       return () => {
         if (intervalRef.current) {

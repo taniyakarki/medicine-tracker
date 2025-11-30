@@ -60,11 +60,10 @@ export default function NotificationScreen() {
     try {
       if (medicine && dose) {
         await snoozeNotification(
-          doseId,
+          String(doseId),
           medicine.id,
           medicine.name,
-          `${medicine.dosage} ${medicine.unit}`,
-          10
+          `${medicine.dosage} ${medicine.unit}`
         );
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
         router.back();

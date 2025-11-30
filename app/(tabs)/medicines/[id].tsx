@@ -72,13 +72,7 @@ export default function MedicineDetailScreen() {
       const dosesWithMedicine = dosesData
         .map((dose) => ({
           ...dose,
-          medicine: medicine || {
-            id: id,
-            name: "",
-            type: "pill" as const,
-            dosage: "",
-            unit: "",
-          },
+          medicine: medicine!,
         }))
         .filter((dose) => {
           const scheduledTime = new Date(dose.scheduled_time);
@@ -88,7 +82,7 @@ export default function MedicineDetailScreen() {
       console.log(
         `Filtered to ${dosesWithMedicine.length} doses (past and today)`
       );
-      setDoses(dosesWithMedicine);
+      setDoses(dosesWithMedicine as any);
     } catch (error) {
       console.error("Error loading schedules and doses:", error);
     } finally {
@@ -163,7 +157,7 @@ export default function MedicineDetailScreen() {
         // For interval-based schedules
         try {
           const intervalHours = schedule.interval_hours;
-          const startTime = schedule.start_time || schedule.time;
+          const startTime = schedule.time;
           
           if (!startTime) continue;
           

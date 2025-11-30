@@ -10,6 +10,7 @@ export interface User {
   allergies?: string;
   medical_conditions?: string;
   profile_image?: string;
+  theme_preference?: string; // 'light' | 'dark' | 'auto'
   created_at: string;
   updated_at: string;
 }

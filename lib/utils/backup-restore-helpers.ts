@@ -1,4 +1,10 @@
 import * as FileSystem from "expo-file-system";
+
+// Type workaround for expo-file-system v19
+// @ts-ignore - documentDirectory exists at runtime
+const documentDirectory = FileSystem.documentDirectory as string;
+// @ts-ignore - EncodingType exists at runtime
+const EncodingType = FileSystem.EncodingType as { UTF8: string };
 import * as Sharing from "expo-sharing";
 import * as DocumentPicker from "expo-document-picker";
 import { Alert } from "react-native";
@@ -61,11 +67,11 @@ export const exportBackup = async (): Promise<void> => {
     // Generate filename with timestamp
     const timestamp = new Date().toISOString().split("T")[0];
     const filename = `medicine_tracker_backup_${timestamp}.json`;
-    const fileUri = `${FileSystem.documentDirectory}${filename}`;
+    const fileUri = `${documentDirectory}${filename}`;
 
     // Save file
     await FileSystem.writeAsStringAsync(fileUri, jsonContent, {
-      encoding: FileSystem.EncodingType.UTF8,
+      encoding: "utf8",
     });
 
     // Share the file
@@ -104,7 +110,7 @@ export const importBackup = async (): Promise<void> => {
 
     // Read the file
     const fileContent = await FileSystem.readAsStringAsync(result.assets[0].uri, {
-      encoding: FileSystem.EncodingType.UTF8,
+      encoding: "utf8",
     });
 
     // Parse JSON
@@ -258,7 +264,7 @@ export const getBackupInfo = async (fileUri: string): Promise<{
 } | null> => {
   try {
     const fileContent = await FileSystem.readAsStringAsync(fileUri, {
-      encoding: FileSystem.EncodingType.UTF8,
+      encoding: "utf8",
     });
 
     const backup: BackupData = JSON.parse(fileContent);

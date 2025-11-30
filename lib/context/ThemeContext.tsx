@@ -1,4 +1,3 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, {
   createContext,
   useContext,
@@ -9,6 +8,8 @@ import React, {
 } from "react";
 import { useColorScheme as useSystemColorScheme } from "react-native";
 import { Colors } from "../../constants/design";
+import { ensureUserExists } from "../database/models/user";
+import { updateUser } from "../database/models/user";
 
 type ThemeMode = "light" | "dark" | "auto";
 type ActiveTheme = "light" | "dark";
@@ -23,8 +24,6 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
-
-const THEME_STORAGE_KEY = "@medicine_tracker_theme";
 
 interface ThemeProviderProps {
   children: ReactNode;
@@ -50,8 +49,9 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 
   const loadThemePreference = async () => {
     try {
-      const savedTheme = await AsyncStorage.getItem(THEME_STORAGE_KEY);
-      if (savedTheme && isValidThemeMode(savedTheme)) {
+      const user = await ensureUserExists();
+      const savedTheme = user.theme_preference || "auto";
+      if (isValidThemeMode(savedTheme)) {
         setThemeModeState(savedTheme as ThemeMode);
       }
     } catch (error) {
@@ -64,7 +64,8 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const setThemeMode = async (mode: ThemeMode) => {
     try {
       setThemeModeState(mode);
-      await AsyncStorage.setItem(THEME_STORAGE_KEY, mode);
+      const user = await ensureUserExists();
+      await updateUser(user.id, { theme_preference: mode });
     } catch (error) {
       console.error("Error saving theme preference:", error);
       throw new Error("Failed to save theme preference");
@@ -88,7 +89,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       setThemeMode,
       isLoading,
     }),
-    [themeMode, activeTheme, isDark, colors, isLoading]
+    [themeMode, activeTheme, isDark, colors, setThemeMode, isLoading]
   );
 
   return (

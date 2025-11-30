@@ -176,13 +176,19 @@ export const scheduleMedicineNotifications = async (
     // Delete old scheduled doses for this medicine that are in the future
     // This prevents duplicates when rescheduling
     const { executeQuery } = await import("../database/operations");
-    await executeQuery(
-      `DELETE FROM doses 
-       WHERE medicine_id = ? 
-       AND status = 'scheduled' 
-       AND scheduled_time > ?`,
-      [medicineId, now.toISOString()]
-    );
+    
+    try {
+      await executeQuery(
+        `DELETE FROM doses 
+         WHERE medicine_id = ? 
+         AND status = 'scheduled' 
+         AND scheduled_time > ?`,
+        [medicineId, now.toISOString()]
+      );
+    } catch (dbError) {
+      console.error("Database error while deleting old doses:", dbError);
+      // Continue with scheduling even if deletion fails
+    }
 
     for (const schedule of schedules) {
       if (medicine.frequency === "daily") {
@@ -257,24 +263,29 @@ export const scheduleMedicineNotifications = async (
           // Only create past doses for the last 24 hours to avoid too many missed doses
           while (pastOccurrence < now) {
             if (pastOccurrence >= oneDayAgo && pastOccurrence < bufferTime) {
-              // Check if a dose already exists for this time
-              const existingDose = await executeQuery(
-                `SELECT id FROM doses 
-                 WHERE medicine_id = ? 
-                   AND schedule_id = ? 
-                   AND scheduled_time = ?
-                 LIMIT 1`,
-                [medicine.id, schedule.id, pastOccurrence.toISOString()]
-              );
+              try {
+                // Check if a dose already exists for this time
+                const existingDose = await executeQuery(
+                  `SELECT id FROM doses 
+                   WHERE medicine_id = ? 
+                     AND schedule_id = ? 
+                     AND scheduled_time = ?
+                   LIMIT 1`,
+                  [medicine.id, schedule.id, pastOccurrence.toISOString()]
+                );
 
-              // Only create if it doesn't exist
-              if (existingDose.length === 0) {
-                await createDose({
-                  medicine_id: medicine.id,
-                  schedule_id: schedule.id,
-                  scheduled_time: pastOccurrence.toISOString(),
-                  status: "missed",
-                });
+                // Only create if it doesn't exist
+                if (existingDose.length === 0) {
+                  await createDose({
+                    medicine_id: medicine.id,
+                    schedule_id: schedule.id,
+                    scheduled_time: pastOccurrence.toISOString(),
+                    status: "missed",
+                  });
+                }
+              } catch (doseError) {
+                console.error("Error creating past dose:", doseError);
+                // Continue with next occurrence
               }
             }
             pastOccurrence = new Date(

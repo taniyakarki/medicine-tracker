@@ -15,6 +15,7 @@ export const ensureUserProfileColumns = async (
     "blood_type",
     "allergies",
     "medical_conditions",
+    "theme_preference",
   ];
 
   let addedCount = 0;
@@ -26,12 +27,13 @@ export const ensureUserProfileColumns = async (
       await db.execAsync(`ALTER TABLE users ADD COLUMN ${column} TEXT;`);
       console.log(`✅ Added column: ${column}`);
       addedCount++;
-    } catch (error: any) {
+    } catch (error) {
       // Column likely already exists, which is fine
-      if (error.message?.includes("duplicate column")) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes("duplicate column")) {
         existingCount++;
       } else {
-        console.log(`⚠️ Could not add column ${column}:`, error.message);
+        console.log(`⚠️ Could not add column ${column}:`, errorMessage);
       }
     }
   }
@@ -53,10 +55,6 @@ export const columnExists = async (
   columnName: string
 ): Promise<boolean> => {
   try {
-    const result = await db.getFirstAsync<{ name: string }>(
-      `PRAGMA table_info(${tableName})`
-    );
-
     const allColumns = await db.getAllAsync<{ name: string }>(
       `PRAGMA table_info(${tableName})`
     );

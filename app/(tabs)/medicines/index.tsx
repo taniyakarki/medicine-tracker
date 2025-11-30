@@ -91,7 +91,7 @@ export default function MedicinesListScreen() {
         id: "has_upcoming",
         label: "Has Upcoming Dose",
         icon: "time",
-        count: medicines.filter((m) => m.next_dose_time).length,
+        count: medicines.filter((m) => m.nextDose).length,
       },
     ];
 
@@ -131,10 +131,7 @@ export default function MedicinesListScreen() {
         }
 
         // Check schedule filters
-        if (
-          selectedFilters.includes("has_upcoming") &&
-          medicine.next_dose_time
-        ) {
+        if (selectedFilters.includes("has_upcoming") && medicine.nextDose) {
           return true;
         }
 

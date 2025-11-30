@@ -30,7 +30,14 @@ const checkMissedDosesAndRemind = async (): Promise<void> => {
     );
 
     // Find doses that are missed and haven't been reminded yet
-    const missedDoses = await executeQuery(
+    const missedDoses = await executeQuery<{
+      id: string;
+      medicine_id: string;
+      scheduled_time: string;
+      name: string;
+      dosage: string;
+      unit: string;
+    }>(
       `SELECT d.id, d.medicine_id, d.scheduled_time, m.name, m.dosage, m.unit
        FROM doses d
        JOIN medicines m ON d.medicine_id = m.id
@@ -143,7 +150,7 @@ export const getBackgroundFetchStatus = async () => {
   return {
     status,
     isRegistered,
-    statusText: getStatusText(status),
+    statusText: status !== null ? getStatusText(status) : "Unknown",
   };
 };
 

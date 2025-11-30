@@ -99,7 +99,7 @@ export const createShadow = (
 export const combineStyles = <T extends ViewStyle | TextStyle>(
   ...styles: (T | undefined | null | false)[]
 ): T => {
-  return styles.filter(Boolean).reduce((acc, style) => ({ ...acc, ...style }), {} as T);
+  return styles.filter((style): style is T => Boolean(style)).reduce((acc, style) => ({ ...acc, ...style }), {} as T);
 };
 
 /**
