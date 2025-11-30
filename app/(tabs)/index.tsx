@@ -8,7 +8,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  useColorScheme,
   View,
 } from "react-native";
 import { Card } from "../../components/ui/Card";
@@ -18,12 +17,12 @@ import { ProgressRing } from "../../components/ui/ProgressRing";
 import { Timeline, TimelineItem } from "../../components/ui/Timeline";
 import {
   BorderRadius,
-  Colors,
   Gradients,
   Shadows,
   Spacing,
   Typography,
 } from "../../constants/design";
+import { useTheme } from "../../lib/context/AppContext";
 import {
   getPastPendingDoses,
   markDoseAsSkipped,
@@ -45,9 +44,7 @@ import {
 import { DoseWithMedicine } from "../../types/medicine";
 
 export default function HomeScreen() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
-  const colors = isDark ? Colors.dark : Colors.light;
+  const { colors, isDark } = useTheme();
 
   const {
     stats,
@@ -207,7 +204,7 @@ export default function HomeScreen() {
         <View style={styles.progressCard}>
           <LinearGradient
             colors={
-              (colorScheme === "dark"
+              (isDark
                 ? Gradients.dark.progress
                 : Gradients.light.progress) as unknown as readonly [string, string, ...string[]]
             }
@@ -386,7 +383,7 @@ export default function HomeScreen() {
           <View style={styles.quickStatCard}>
             <LinearGradient
               colors={
-                (colorScheme === "dark"
+                (isDark
                   ? Gradients.dark.streak
                   : Gradients.light.streak) as unknown as readonly [string, string, ...string[]]
               }
@@ -412,7 +409,7 @@ export default function HomeScreen() {
           <View style={styles.quickStatCard}>
             <LinearGradient
               colors={
-                (colorScheme === "dark"
+                (isDark
                   ? Gradients.dark.adherence
                   : Gradients.light.adherence) as unknown as readonly [string, string, ...string[]]
               }
@@ -438,7 +435,7 @@ export default function HomeScreen() {
           <View style={styles.quickStatCard}>
             <LinearGradient
               colors={
-                (colorScheme === "dark"
+                (isDark
                   ? Gradients.dark.active
                   : Gradients.light.active) as unknown as readonly [string, string, ...string[]]
               }

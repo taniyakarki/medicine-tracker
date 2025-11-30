@@ -4,12 +4,12 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  useColorScheme,
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Colors, Spacing, Typography } from '../../constants/design';
+import { Spacing, Typography } from '../../constants/design';
+import { useTheme } from '../../lib/context/AppContext';
 
 interface DatePickerProps {
   label: string;
@@ -32,8 +32,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   maximumDate,
   placeholder = 'Select date',
 }) => {
-  const colorScheme = useColorScheme();
-  const colors = colorScheme === 'dark' ? Colors.dark : Colors.light;
+  const { colors } = useTheme();
   
   const [showPicker, setShowPicker] = useState(false);
   const [tempDate, setTempDate] = useState<Date>(

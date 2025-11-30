@@ -5,6 +5,7 @@ import React, {
   useState,
   ReactNode,
   useMemo,
+  useCallback,
 } from "react";
 import { useColorScheme as useSystemColorScheme } from "react-native";
 import { Colors } from "../../constants/design";
@@ -47,6 +48,10 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     loadThemePreference();
   }, []);
 
+  const isValidThemeMode = (value: string): boolean => {
+    return ["light", "dark", "auto"].includes(value);
+  };
+
   const loadThemePreference = async () => {
     try {
       const user = await ensureUserExists();
@@ -61,7 +66,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     }
   };
 
-  const setThemeMode = async (mode: ThemeMode) => {
+  const setThemeMode = useCallback(async (mode: ThemeMode) => {
     try {
       setThemeModeState(mode);
       const user = await ensureUserExists();
@@ -70,11 +75,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       console.error("Error saving theme preference:", error);
       throw new Error("Failed to save theme preference");
     }
-  };
-
-  const isValidThemeMode = (value: string): boolean => {
-    return ["light", "dark", "auto"].includes(value);
-  };
+  }, []);
 
   // Memoize computed values
   const isDark = useMemo(() => activeTheme === "dark", [activeTheme]);

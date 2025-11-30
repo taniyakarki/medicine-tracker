@@ -2,16 +2,16 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { StyleSheet, Text, useColorScheme, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { Button } from "../../components/ui/Button";
-import { Colors, Spacing, Typography } from "../../constants/design";
+import { Spacing, Typography } from "../../constants/design";
+import { useTheme } from "../../lib/context/AppContext";
 
 const ONBOARDING_KEY = "@medicine_tracker_onboarding_complete";
 
 export default function OnboardingScreen() {
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
+  const { colors } = useTheme();
   const [currentStep, setCurrentStep] = useState(0);
 
   const steps = [

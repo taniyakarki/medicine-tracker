@@ -8,7 +8,6 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  useColorScheme,
   View,
 } from "react-native";
 import { Calendar } from "../../components/ui/Calendar";
@@ -27,10 +26,10 @@ import {
 } from "../../components/ui/Charts";
 import {
   BorderRadius,
-  Colors,
   Spacing,
   Typography,
 } from "../../constants/design";
+import { useTheme } from "../../lib/context/AppContext";
 import {
   getDosesInDateRange,
   markDoseAsMissed,
@@ -59,8 +58,7 @@ const dateRangeOptions: SelectOption[] = [
 ];
 
 export default function HistoryScreen() {
-  const colorScheme = useColorScheme();
-  const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
+  const { colors } = useTheme();
   const { stats, loading, refresh } = useMedicineStats();
   const [refreshing, setRefreshing] = useState(false);
 

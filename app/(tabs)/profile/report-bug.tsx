@@ -8,7 +8,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  useColorScheme,
   View,
 } from "react-native";
 import { Button } from "../../../components/ui/Button";
@@ -17,10 +16,10 @@ import { Input } from "../../../components/ui/Input";
 import { Select, SelectOption } from "../../../components/ui/Select";
 import {
   BorderRadius,
-  Colors,
   Spacing,
   Typography,
 } from "../../../constants/design";
+import { useTheme } from "../../../lib/context/AppContext";
 
 const bugCategories: SelectOption[] = [
   { label: "App Crash", value: "crash" },
@@ -41,8 +40,7 @@ const severityLevels: SelectOption[] = [
 
 export default function ReportBugScreen() {
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
+  const { colors } = useTheme();
 
   const [formData, setFormData] = useState({
     title: "",

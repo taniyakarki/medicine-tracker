@@ -6,11 +6,11 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  useColorScheme,
   View,
 } from "react-native";
 import { MedicineTypeIcon } from "../components/medicine/MedicineTypeIcon";
-import { BorderRadius, Colors, Spacing, Typography } from "../constants/design";
+import { BorderRadius, Spacing, Typography } from "../constants/design";
+import { useTheme } from "../lib/context/AppContext";
 import {
   getDoseById,
   markDoseAsSkipped,
@@ -22,8 +22,7 @@ import { snoozeNotification } from "../lib/notifications/scheduler";
 export default function NotificationScreen() {
   const router = useRouter();
   const { doseId } = useLocalSearchParams<{ doseId: string }>();
-  const colorScheme = useColorScheme();
-  const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
+  const { colors } = useTheme();
 
   const [medicine, setMedicine] = useState<any>(null);
   const [dose, setDose] = useState<any>(null);
@@ -107,7 +106,7 @@ export default function NotificationScreen() {
 
         <View style={styles.actions}>
           <TouchableOpacity
-            style={[styles.actionButton, styles.takeButton]}
+            style={[styles.actionButton, { backgroundColor: colors.success }]}
             onPress={handleTake}
           >
             <Ionicons name="checkmark-circle" size={32} color="#FFFFFF" />
@@ -115,7 +114,7 @@ export default function NotificationScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.actionButton, styles.snoozeButton]}
+            style={[styles.actionButton, { backgroundColor: colors.warning }]}
             onPress={handleSnooze}
           >
             <Ionicons name="time" size={32} color="#FFFFFF" />
@@ -123,7 +122,7 @@ export default function NotificationScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.actionButton, styles.skipButton]}
+            style={[styles.actionButton, { backgroundColor: colors.danger }]}
             onPress={handleSkip}
           >
             <Ionicons name="close-circle" size={32} color="#FFFFFF" />
@@ -185,15 +184,6 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
     borderRadius: BorderRadius.xl,
     gap: Spacing.md,
-  },
-  takeButton: {
-    backgroundColor: Colors.light.success,
-  },
-  snoozeButton: {
-    backgroundColor: Colors.light.warning,
-  },
-  skipButton: {
-    backgroundColor: Colors.light.danger,
   },
   actionText: {
     fontSize: Typography.fontSize.xl,

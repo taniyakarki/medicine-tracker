@@ -11,7 +11,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  useColorScheme,
   View,
 } from "react-native";
 import { Button } from "../../../components/ui/Button";
@@ -19,11 +18,11 @@ import { LoadingSpinner } from "../../../components/ui/LoadingSpinner";
 import { Modal } from "../../../components/ui/Modal";
 import {
   BorderRadius,
-  Colors,
   Layout,
   Spacing,
   Typography,
 } from "../../../constants/design";
+import { useTheme } from "../../../lib/context/AppContext";
 import {
   ensureUserExists,
   updateUser,
@@ -31,8 +30,7 @@ import {
 import { User } from "../../../types/database";
 
 export default function EditProfileScreen() {
-  const colorScheme = useColorScheme();
-  const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
+  const { colors } = useTheme();
 
   const [user, setUser] = useState<User | null>(null);
   const [name, setName] = useState("");
@@ -247,7 +245,7 @@ export default function EditProfileScreen() {
             {/* Name Field */}
             <View style={styles.fieldContainer}>
               <Text style={[styles.label, { color: colors.text }]}>
-                Name <Text style={styles.required}>*</Text>
+                Name <Text style={{ color: colors.danger }}>*</Text>
               </Text>
               <View
                 style={[
@@ -611,7 +609,10 @@ export default function EditProfileScreen() {
           </View>
 
           {/* Danger Zone */}
-          <View style={styles.dangerZoneContainer}>
+          <View style={[styles.dangerZoneContainer, { 
+            borderColor: colors.danger + "30",
+            backgroundColor: colors.danger + "05"
+          }]}>
             <View style={styles.dangerZoneHeader}>
               <Ionicons name="warning" size={24} color={colors.danger} />
               <Text style={[styles.dangerZoneTitle, { color: colors.danger }]}>
@@ -792,9 +793,6 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.base,
     fontWeight: Typography.fontWeight.medium,
   },
-  required: {
-    color: Colors.light.danger,
-  },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -886,8 +884,6 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
     borderRadius: BorderRadius.lg,
     borderWidth: 2,
-    borderColor: Colors.light.danger + "30",
-    backgroundColor: Colors.light.danger + "05",
   },
   dangerZoneHeader: {
     flexDirection: "row",

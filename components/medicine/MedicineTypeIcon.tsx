@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { StyleSheet, useColorScheme, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { getMedicineTypeColor } from "../../constants/design";
+import { useTheme } from "../../lib/context/AppContext";
 
 interface MedicineTypeIconProps {
   type: string;
@@ -14,8 +15,7 @@ export const MedicineTypeIcon: React.FC<MedicineTypeIconProps> = ({
   size = 24,
   color: customColor,
 }) => {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const { isDark } = useTheme();
   const color = customColor || getMedicineTypeColor(type, isDark);
 
   const getIconName = (): keyof typeof Ionicons.glyphMap => {

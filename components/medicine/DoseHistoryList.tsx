@@ -5,10 +5,10 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  useColorScheme,
   View,
 } from "react-native";
-import { Colors, Spacing, Typography } from "../../constants/design";
+import { Spacing, Typography } from "../../constants/design";
+import { useTheme } from "../../lib/context/AppContext";
 import { DoseStatus, DoseWithMedicine } from "../../types/medicine";
 import { Card } from "../ui/Card";
 
@@ -31,8 +31,7 @@ export const DoseHistoryList: React.FC<DoseHistoryListProps> = ({
   showMedicineName = true,
   nested = false,
 }) => {
-  const colorScheme = useColorScheme();
-  const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
+  const { colors } = useTheme();
 
   const [filter, setFilter] = useState<FilterType>("all");
 

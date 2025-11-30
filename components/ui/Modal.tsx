@@ -56,7 +56,7 @@ export const Modal: React.FC<ModalProps> = ({
           ]}
         >
           {(title || showCloseButton) && (
-            <View style={styles.header}>
+            <View style={[styles.header, { borderBottomColor: colors.border }]}>
               {title && (
                 <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
               )}
@@ -100,7 +100,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: Spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.light.border,
   },
   title: {
     fontSize: Typography.fontSize.xl,

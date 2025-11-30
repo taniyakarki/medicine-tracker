@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
-  useColorScheme,
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,7 +12,8 @@ import * as ImagePickerLib from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system';
 import { Image } from 'expo-image';
-import { Colors, Spacing, Typography } from '../../constants/design';
+import { Spacing, Typography } from '../../constants/design';
+import { useTheme } from '../../lib/context/AppContext';
 import { Card } from '../ui/Card';
 
 interface ImagePickerProps {
@@ -29,8 +29,7 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({
   label = 'Medicine Image',
   error,
 }) => {
-  const colorScheme = useColorScheme();
-  const colors = colorScheme === 'dark' ? Colors.dark : Colors.light;
+  const { colors } = useTheme();
   
   const [loading, setLoading] = useState(false);
 

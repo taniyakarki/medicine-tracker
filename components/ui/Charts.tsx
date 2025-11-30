@@ -3,15 +3,14 @@ import {
   Dimensions,
   StyleSheet,
   Text,
-  useColorScheme,
   View,
 } from "react-native";
 import Svg, { Circle, Line, Path, Rect, Text as SvgText } from "react-native-svg";
 import {
-  Colors,
   Spacing,
   Typography,
 } from "../../constants/design";
+import { useTheme } from "../../lib/context/AppContext";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const CHART_WIDTH = SCREEN_WIDTH - Spacing.md * 4;
@@ -40,8 +39,7 @@ export const BarChart: React.FC<BarChartProps> = ({
   maxValue,
   showValues = true,
 }) => {
-  const colorScheme = useColorScheme();
-  const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
+  const { colors } = useTheme();
 
   const max = maxValue || Math.max(...data.map((d) => d.value), 1);
   const barWidth = (CHART_WIDTH - Spacing.md * (data.length + 1)) / data.length;
@@ -145,8 +143,7 @@ export const LineChart: React.FC<LineChartProps> = ({
   color,
   showDots = true,
 }) => {
-  const colorScheme = useColorScheme();
-  const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
+  const { colors } = useTheme();
 
   const lineColor = color || colors.primary;
   const max = maxValue || Math.max(...data.map((d) => d.value), 1);
@@ -253,8 +250,7 @@ export const PieChart: React.FC<PieChartProps> = ({
   title,
   size = 200,
 }) => {
-  const colorScheme = useColorScheme();
-  const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
+  const { colors } = useTheme();
 
   const total = data.reduce((sum, item) => sum + item.value, 0);
   const radius = size / 2 - 10;
@@ -353,8 +349,7 @@ export const ProgressRing: React.FC<ProgressRingProps> = ({
   backgroundColor,
   children,
 }) => {
-  const colorScheme = useColorScheme();
-  const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
+  const { colors } = useTheme();
 
   const ringColor = color || colors.primary;
   const bgColor = backgroundColor || colors.border;

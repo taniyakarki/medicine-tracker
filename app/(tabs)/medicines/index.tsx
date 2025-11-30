@@ -7,7 +7,6 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  useColorScheme,
   View,
 } from "react-native";
 import { MedicineCard } from "../../../components/medicine/MedicineCard";
@@ -15,15 +14,15 @@ import { EmptyState } from "../../../components/ui/EmptyState";
 import { FilterChips, FilterOption } from "../../../components/ui/FilterChips";
 import { LoadingSpinner } from "../../../components/ui/LoadingSpinner";
 import { SearchBar } from "../../../components/ui/SearchBar";
-import { Colors, Spacing, Typography } from "../../../constants/design";
+import { Spacing, Typography } from "../../../constants/design";
 import { MEDICINE_TYPES } from "../../../constants/medicine-types";
+import { useTheme } from "../../../lib/context/AppContext";
 import { useMedicines } from "../../../lib/hooks/useMedicines";
 import { MedicineWithNextDose } from "../../../types/medicine";
 
 export default function MedicinesListScreen() {
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
+  const { colors } = useTheme();
   const { medicines, loading, refresh } = useMedicines();
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");

@@ -10,7 +10,6 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  useColorScheme,
   View,
 } from "react-native";
 import { Card } from "../../../components/ui/Card";
@@ -19,11 +18,11 @@ import { Modal } from "../../../components/ui/Modal";
 import { ThemeSelector } from "../../../components/ui/ThemeSelector";
 import {
   BorderRadius,
-  Colors,
   Shadows,
   Spacing,
   Typography,
 } from "../../../constants/design";
+import { useTheme } from "../../../lib/context/AppContext";
 import { getEmergencyContactsByUserId } from "../../../lib/database/models/emergency-contact";
 import { ensureNotificationSettings } from "../../../lib/database/models/notification-settings";
 import { ensureUserExists, updateUser } from "../../../lib/database/models/user";
@@ -44,8 +43,7 @@ import {
 } from "../../../types/database";
 
 export default function ProfileScreen() {
-  const colorScheme = useColorScheme();
-  const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
+  const { colors, themeMode, setThemeMode, isDark } = useTheme();
 
   const [user, setUser] = useState<User | null>(null);
   const [emergencyContacts, setEmergencyContacts] = useState<
@@ -55,7 +53,6 @@ export default function ProfileScreen() {
     useState<NotificationSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [showThemeModal, setShowThemeModal] = useState(false);
-  const [themeMode, setThemeMode] = useState<"light" | "dark" | "auto">("auto");
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   const loadData = useCallback(async () => {
@@ -171,12 +168,17 @@ export default function ProfileScreen() {
   };
 
   const handleThemeChange = async (mode: "light" | "dark" | "auto") => {
-    setThemeMode(mode);
-    setShowThemeModal(false);
-    Alert.alert(
-      "Theme Changed",
-      `Theme set to ${mode}. Please restart the app for changes to take effect.`
-    );
+    try {
+      await setThemeMode(mode);
+      setShowThemeModal(false);
+      Alert.alert(
+        "Theme Changed",
+        `Theme set to ${mode === "auto" ? "Auto (System)" : mode === "dark" ? "Dark" : "Light"}.`
+      );
+    } catch (error) {
+      console.error("Error changing theme:", error);
+      Alert.alert("Error", "Failed to change theme. Please try again.");
+    }
   };
 
   const handleExportData = async () => {
@@ -218,7 +220,7 @@ export default function ProfileScreen() {
         <View style={[styles.section, styles.profileCard]}>
           <LinearGradient
             colors={
-              colorScheme === "dark"
+              isDark
                 ? ["#1a1a2e", "#16213e", "#0f3460"]
                 : ["#667eea", "#764ba2", "#f093fb"]
             }
@@ -243,7 +245,7 @@ export default function ProfileScreen() {
                     ) : (
                       <LinearGradient
                         colors={
-                          colorScheme === "dark"
+                          isDark
                             ? ["#f093fb", "#f5576c", "#4facfe"]
                             : ["#ffffff", "#f0f0f0"]
                         }
@@ -255,8 +257,7 @@ export default function ProfileScreen() {
                           style={[
                             styles.avatarText,
                             {
-                              color:
-                                colorScheme === "dark" ? "#FFFFFF" : "#667eea",
+                              color: isDark ? "#FFFFFF" : "#667eea",
                             },
                           ]}
                         >
@@ -273,8 +274,7 @@ export default function ProfileScreen() {
                   style={[
                     styles.editButton,
                     {
-                      backgroundColor:
-                        colorScheme === "dark" ? "#f5576c" : "#FFFFFF",
+                      backgroundColor: isDark ? "#f5576c" : "#FFFFFF",
                     },
                   ]}
                   disabled={uploadingPhoto}
@@ -285,7 +285,7 @@ export default function ProfileScreen() {
                     <Ionicons
                       name="camera"
                       size={18}
-                      color={colorScheme === "dark" ? "#FFFFFF" : "#667eea"}
+                      color={isDark ? "#FFFFFF" : "#667eea"}
                     />
                   )}
                 </TouchableOpacity>
@@ -296,15 +296,14 @@ export default function ProfileScreen() {
                   style={[
                     styles.editProfileButton,
                     {
-                      backgroundColor:
-                        colorScheme === "dark" ? "#4facfe" : "#FFFFFF",
+                      backgroundColor: isDark ? "#4facfe" : "#FFFFFF",
                     },
                   ]}
                 >
                   <Ionicons
                     name="create"
                     size={18}
-                    color={colorScheme === "dark" ? "#FFFFFF" : "#667eea"}
+                    color={isDark ? "#FFFFFF" : "#667eea"}
                   />
                 </TouchableOpacity>
               </View>

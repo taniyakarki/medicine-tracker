@@ -4,15 +4,14 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  useColorScheme,
   View,
 } from "react-native";
 import {
   BorderRadius,
-  Colors,
   Spacing,
   Typography,
 } from "../../constants/design";
+import { useTheme } from "../../lib/context/AppContext";
 
 type ThemeMode = "light" | "dark" | "auto";
 
@@ -25,8 +24,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
   currentTheme,
   onSelectTheme,
 }) => {
-  const colorScheme = useColorScheme();
-  const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
+  const { colors } = useTheme();
 
   const themes: {
     mode: ThemeMode;

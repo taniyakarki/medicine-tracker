@@ -4,15 +4,14 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  useColorScheme,
   View,
 } from "react-native";
 import {
   BorderRadius,
-  Colors,
   Spacing,
   Typography,
 } from "../../constants/design";
+import { useTheme } from "../../lib/context/AppContext";
 
 export interface CalendarDayData {
   date: string; // ISO date string
@@ -39,8 +38,7 @@ export const Calendar: React.FC<CalendarProps> = ({
   onDayPress,
   selectedDate,
 }) => {
-  const colorScheme = useColorScheme();
-  const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
+  const { colors } = useTheme();
 
   // Create a map for quick lookup
   const dataMap = useMemo(() => {
@@ -210,9 +208,9 @@ export const Calendar: React.FC<CalendarProps> = ({
                 <TouchableOpacity
                   key={dayIndex}
                   style={[
-                    styles.day,
-                    { backgroundColor: colors.surfaceSecondary },
-                    isTodayDate && styles.today,
+                  styles.day,
+                  { backgroundColor: colors.surfaceSecondary },
+                  isTodayDate && { borderWidth: 2, borderColor: colors.primary },
                     isSelectedDate && {
                       backgroundColor: colors.primary,
                       borderColor: colors.primary,
@@ -229,9 +227,8 @@ export const Calendar: React.FC<CalendarProps> = ({
                           ? "#FFFFFF"
                           : isTodayDate
                           ? colors.primary
-                          : colors.text,
-                      },
-                      isTodayDate && styles.todayText,
+                        : colors.text,
+                    },
                     ]}
                   >
                     {date.getDate()}
@@ -257,7 +254,7 @@ export const Calendar: React.FC<CalendarProps> = ({
       </View>
 
       {/* Legend */}
-      <View style={styles.legend}>
+      <View style={[styles.legend, { borderTopColor: colors.border }]}>
         <View style={styles.legendItem}>
           <View
             style={[styles.legendDot, { backgroundColor: colors.success }]}
@@ -342,10 +339,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "transparent",
   },
-  today: {
-    borderWidth: 2,
-    borderColor: Colors.light.primary,
-  },
   dayText: {
     fontSize: Typography.fontSize.sm,
     fontWeight: Typography.fontWeight.medium,
@@ -366,7 +359,6 @@ const styles = StyleSheet.create({
     marginTop: Spacing.md,
     paddingTop: Spacing.md,
     borderTopWidth: 1,
-    borderTopColor: Colors.light.border,
   },
   legendItem: {
     flexDirection: "row",

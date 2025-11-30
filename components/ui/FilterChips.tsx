@@ -5,15 +5,14 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  useColorScheme,
   View,
 } from "react-native";
 import {
   BorderRadius,
-  Colors,
   Spacing,
   Typography,
 } from "../../constants/design";
+import { useTheme } from "../../lib/context/AppContext";
 
 export interface FilterOption {
   id: string;
@@ -37,8 +36,7 @@ const FilterChipsComponent: React.FC<FilterChipsProps> = ({
   onClearAll,
   showClearAll = true,
 }) => {
-  const colorScheme = useColorScheme();
-  const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
+  const { colors } = useTheme();
   const scrollViewRef = useRef<ScrollView>(null);
   const scrollPositionRef = useRef(0);
 

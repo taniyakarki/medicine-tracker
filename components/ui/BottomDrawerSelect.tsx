@@ -7,15 +7,14 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  useColorScheme,
   View,
 } from "react-native";
 import {
   BorderRadius,
-  Colors,
   Spacing,
   Typography,
 } from "../../constants/design";
+import { useTheme } from "../../lib/context/AppContext";
 
 export interface BottomDrawerSelectOption {
   label: string;
@@ -57,8 +56,7 @@ export const BottomDrawerSelect: React.FC<BottomDrawerSelectProps> = ({
   renderTrigger,
   renderOption,
 }) => {
-  const colorScheme = useColorScheme();
-  const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
+  const { colors } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
 
   const selectedOption = value

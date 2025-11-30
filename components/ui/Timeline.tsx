@@ -1,7 +1,8 @@
 import React, { memo, useCallback } from 'react';
-import { View, Text, StyleSheet , useColorScheme, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, BorderRadius } from '../../constants/design';
+import { Typography, Spacing, BorderRadius } from '../../constants/design';
+import { useTheme } from '../../lib/context/AppContext';
 
 export interface TimelineItem {
   id: string;
@@ -24,9 +25,7 @@ export const Timeline = memo<TimelineProps>(function Timeline({
   onSkipDose, 
   showActions = false 
 }) {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const colors = isDark ? Colors.dark : Colors.light;
+  const { colors } = useTheme();
 
   const getStatusColor = useCallback((status?: string) => {
     switch (status) {

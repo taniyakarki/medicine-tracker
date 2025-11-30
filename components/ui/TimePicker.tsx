@@ -4,11 +4,11 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  useColorScheme,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Modal } from "./Modal";
-import { Colors, Spacing, Typography, BorderRadius } from "../../constants/design";
+import { Spacing, Typography, BorderRadius } from "../../constants/design";
+import { useTheme } from "../../lib/context/AppContext";
 
 interface TimePickerProps {
   visible: boolean;
@@ -25,8 +25,7 @@ export const TimePicker: React.FC<TimePickerProps> = ({
   initialTime = "00:00",
   title,
 }) => {
-  const colorScheme = useColorScheme();
-  const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
+  const { colors } = useTheme();
 
   const [hours, minutes] = initialTime.split(":").map(Number);
   const [selectedHour, setSelectedHour] = useState(hours);

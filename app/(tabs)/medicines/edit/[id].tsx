@@ -6,7 +6,6 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  useColorScheme,
   View,
 } from "react-native";
 import { ColorPicker } from "../../../../components/medicine/ColorPicker";
@@ -21,8 +20,9 @@ import { DatePicker } from "../../../../components/ui/DatePicker";
 import { Input } from "../../../../components/ui/Input";
 import { LoadingSpinner } from "../../../../components/ui/LoadingSpinner";
 import { Select, SelectOption } from "../../../../components/ui/Select";
-import { Colors, Spacing } from "../../../../constants/design";
+import { Spacing } from "../../../../constants/design";
 import { MEDICINE_TYPES } from "../../../../constants/medicine-types";
+import { useTheme } from "../../../../lib/context/AppContext";
 import {
   getMedicineById,
   updateMedicine,
@@ -60,8 +60,7 @@ const medicineUnits: SelectOption[] = [
 export default function EditMedicineScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const colorScheme = useColorScheme();
-  const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
+  const { colors } = useTheme();
 
   const [formData, setFormData] = useState({
     name: "",

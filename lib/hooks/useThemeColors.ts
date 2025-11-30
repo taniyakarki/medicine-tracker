@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Colors } from "../../constants/design";
-import { useTheme } from "../context/ThemeContext";
+import { useTheme } from "../context/AppContext";
 
 /**
  * useThemeColors Hook

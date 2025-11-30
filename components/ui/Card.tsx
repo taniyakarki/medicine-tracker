@@ -1,7 +1,7 @@
 import React from "react";
 import { View, ViewStyle } from "react-native";
 import { BorderRadius, Shadows, Spacing } from "../../constants/design";
-import { useThemeColors } from "../../lib/hooks/useThemeColors";
+import { useTheme } from "../../lib/context/AppContext";
 
 interface CardProps {
   children: React.ReactNode;
@@ -17,7 +17,7 @@ export const Card: React.FC<CardProps> = ({
   padding = "md",
   elevated = true,
 }) => {
-  const colors = useThemeColors();
+  const { colors } = useTheme();
 
   const cardStyle: ViewStyle = {
     backgroundColor: colors.surface,

@@ -4,12 +4,12 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  useColorScheme,
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Colors, Spacing, Typography } from '../../constants/design';
+import { Spacing, Typography } from '../../constants/design';
+import { useTheme } from '../../lib/context/AppContext';
 import { Card } from '../ui/Card';
 
 export interface ScheduleTime {
@@ -46,8 +46,7 @@ export const SchedulePicker: React.FC<SchedulePickerProps> = ({
   frequency,
   error,
 }) => {
-  const colorScheme = useColorScheme();
-  const colors = colorScheme === 'dark' ? Colors.dark : Colors.light;
+  const { colors } = useTheme();
   
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [editingTimeId, setEditingTimeId] = useState<string | null>(null);

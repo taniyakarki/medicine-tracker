@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { useEffect, useState } from "react";
-import { Platform } from "react-native";
+import { Platform, StatusBar } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { removeDuplicateDoses } from "../lib/database/models/dose";
 import { initDatabase } from "../lib/database/operations";
@@ -10,11 +10,13 @@ import { setupNotificationListeners } from "../lib/notifications/handlers";
 import { initializeNotifications } from "../lib/notifications/setup";
 import { AppProvider } from "../lib/context/AppContext";
 import { useThemeColors } from "../lib/hooks/useThemeColors";
+import { useTheme } from "../lib/context/ThemeContext";
 
 const ONBOARDING_KEY = "@medicine_tracker_onboarding_complete";
 
 function RootLayoutContent() {
   const colors = useThemeColors();
+  const { isDark } = useTheme();
   const router = useRouter();
   const segments = useSegments();
   const [isReady, setIsReady] = useState(false);
@@ -68,34 +70,41 @@ function RootLayoutContent() {
   }
 
   return (
-    <Stack
-      screenOptions={{
-        headerStyle: {
-          backgroundColor: colors.background,
-        },
-        headerTintColor: colors.text,
-        headerShadowVisible: false,
-        contentStyle: {
-          backgroundColor: colors.background,
-          flex: 1,
-        },
-        // Prevent flickering during navigation
-        animation: "default",
-      }}
-    >
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen
-        name="onboarding/index"
-        options={{ headerShown: false }}
+    <>
+      <StatusBar
+        barStyle={isDark ? "light-content" : "dark-content"}
+        backgroundColor={colors.background}
+        translucent={false}
       />
-      <Stack.Screen
-        name="notification-screen"
-        options={{
-          presentation: "fullScreenModal",
-          headerShown: false,
+      <Stack
+        screenOptions={{
+          headerStyle: {
+            backgroundColor: colors.background,
+          },
+          headerTintColor: colors.text,
+          headerShadowVisible: false,
+          contentStyle: {
+            backgroundColor: colors.background,
+            flex: 1,
+          },
+          // Prevent flickering during navigation
+          animation: "default",
         }}
-      />
-    </Stack>
+      >
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="onboarding/index"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="notification-screen"
+          options={{
+            presentation: "fullScreenModal",
+            headerShown: false,
+          }}
+        />
+      </Stack>
+    </>
   );
 }
 

@@ -7,7 +7,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  useColorScheme,
   View,
 } from "react-native";
 import { DoseHistoryList } from "../../../components/medicine/DoseHistoryList";
@@ -15,7 +14,8 @@ import { MedicineTypeIcon } from "../../../components/medicine/MedicineTypeIcon"
 import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
 import { LoadingSpinner } from "../../../components/ui/LoadingSpinner";
-import { Colors, Spacing, Typography } from "../../../constants/design";
+import { Spacing, Typography } from "../../../constants/design";
+import { useTheme } from "../../../lib/context/AppContext";
 import { getDosesByMedicineId } from "../../../lib/database/models/dose";
 import { deleteMedicine } from "../../../lib/database/models/medicine";
 import { getSchedulesByMedicineId } from "../../../lib/database/models/schedule";
@@ -26,8 +26,7 @@ import { DoseWithMedicine } from "../../../types/medicine";
 export default function MedicineDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const colorScheme = useColorScheme();
-  const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
+  const { colors } = useTheme();
   const { medicine, loading, refresh: refreshMedicine } = useMedicine(id);
 
   const [schedules, setSchedules] = useState<Schedule[]>([]);
@@ -382,7 +381,7 @@ export default function MedicineDetailScreen() {
 
         {/* Next Scheduled Dose */}
         {nextDoseFormatted && (
-          <Card style={styles.nextDoseCard}>
+          <Card style={[styles.nextDoseCard, { borderLeftColor: colors.primary }]}>
             <View style={styles.nextDoseHeader}>
               <Ionicons name="alarm" size={24} color={colors.primary} />
               <Text style={[styles.nextDoseTitle, { color: colors.text }]}>
@@ -772,7 +771,6 @@ const styles = StyleSheet.create({
   nextDoseCard: {
     marginBottom: Spacing.md,
     borderLeftWidth: 4,
-    borderLeftColor: Colors.light.primary,
   },
   nextDoseHeader: {
     flexDirection: "row",

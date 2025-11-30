@@ -1,10 +1,8 @@
 import { Stack } from "expo-router";
-import { Platform, useColorScheme } from "react-native";
-import { Colors } from "../../../constants/design";
+import { useTheme } from "../../../lib/context/AppContext";
 
 export default function MedicinesLayout() {
-  const colorScheme = useColorScheme();
-  const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
+  const { colors } = useTheme();
 
   return (
     <Stack

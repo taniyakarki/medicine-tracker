@@ -10,12 +10,12 @@ import {
   Switch,
   Text,
   TextInput,
-  useColorScheme,
   View,
 } from "react-native";
 import { Button } from "../../../../components/ui/Button";
 import { Select, SelectOption } from "../../../../components/ui/Select";
-import { Colors, Spacing, Typography } from "../../../../constants/design";
+import { Spacing, Typography } from "../../../../constants/design";
+import { useTheme } from "../../../../lib/context/AppContext";
 import { createEmergencyContact } from "../../../../lib/database/models/emergency-contact";
 import { ensureUserExists } from "../../../../lib/database/models/user";
 
@@ -34,8 +34,7 @@ const relationshipOptions: SelectOption[] = [
 ];
 
 export default function AddEmergencyContactScreen() {
-  const colorScheme = useColorScheme();
-  const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
+  const { colors } = useTheme();
 
   const [name, setName] = useState("");
   const [relationship, setRelationship] = useState("");
@@ -131,7 +130,7 @@ export default function AddEmergencyContactScreen() {
           {/* Name Field */}
           <View style={styles.fieldContainer}>
             <Text style={[styles.label, { color: colors.text }]}>
-              Name <Text style={styles.required}>*</Text>
+              Name <Text style={{ color: colors.danger }}>*</Text>
             </Text>
             <View
               style={[
@@ -188,7 +187,7 @@ export default function AddEmergencyContactScreen() {
           {/* Phone Field */}
           <View style={styles.fieldContainer}>
             <Text style={[styles.label, { color: colors.text }]}>
-              Phone Number <Text style={styles.required}>*</Text>
+              Phone Number <Text style={{ color: colors.danger }}>*</Text>
             </Text>
             <View
               style={[
@@ -337,9 +336,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: Typography.fontSize.base,
     fontWeight: Typography.fontWeight.medium,
-  },
-  required: {
-    color: Colors.light.danger,
   },
   inputContainer: {
     flexDirection: "row",
