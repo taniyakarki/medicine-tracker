@@ -610,44 +610,43 @@ export default function ProfileScreen() {
             </Text>
           </View>
 
-          <TouchableOpacity
-            style={[
-              styles.actionButton,
-              { backgroundColor: colors.surfaceSecondary },
-            ]}
-            onPress={() => router.push("/profile/notification-settings")}
-          >
-            <View style={styles.actionButtonContent}>
-              <View
-                style={[
-                  styles.actionButtonIcon,
-                  { backgroundColor: colors.info + "20" },
-                ]}
-              >
-                <Ionicons name="settings" size={24} color={colors.info} />
-              </View>
-              <View style={styles.actionButtonText}>
-                <Text style={[styles.actionButtonTitle, { color: colors.text }]}>
-                  Manage Notifications
-                </Text>
-                <Text
+          <View style={styles.settingsGroup}>
+            <TouchableOpacity
+              style={styles.settingItem}
+              onPress={() => router.push("/profile/notification-settings")}
+            >
+              <View style={styles.settingLeft}>
+                <View
                   style={[
-                    styles.actionButtonDescription,
-                    { color: colors.textSecondary },
+                    styles.settingIconContainer,
+                    { backgroundColor: colors.info + "15" },
                   ]}
                 >
-                  {notificationSettings?.enabled
-                    ? "Notifications enabled"
-                    : "Notifications disabled"}
-                </Text>
+                  <Ionicons name="settings" size={20} color={colors.info} />
+                </View>
+                <View style={styles.settingTextContainer}>
+                  <Text style={[styles.settingLabel, { color: colors.text }]}>
+                    Manage Notifications
+                  </Text>
+                  <Text
+                    style={[
+                      styles.settingDescription,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    {notificationSettings?.enabled
+                      ? "Notifications enabled"
+                      : "Notifications disabled"}
+                  </Text>
+                </View>
               </View>
-            </View>
-            <Ionicons
-              name="chevron-forward"
-              size={24}
-              color={colors.textSecondary}
-            />
-          </TouchableOpacity>
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={colors.textSecondary}
+              />
+            </TouchableOpacity>
+          </View>
         </Card>
 
         {/* App Settings */}

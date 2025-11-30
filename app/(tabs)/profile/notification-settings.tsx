@@ -1,45 +1,73 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as Notifications from "expo-notifications";
 import { Stack } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
   Alert,
+  Linking,
+  Platform,
   ScrollView,
   StyleSheet,
   Switch,
   Text,
   TouchableOpacity,
-  useColorScheme,
   View,
 } from "react-native";
+import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
 import { LoadingSpinner } from "../../../components/ui/LoadingSpinner";
-import { Modal } from "../../../components/ui/Modal";
+import { OptionModal } from "../../../components/ui/OptionModal";
 import { TimePicker } from "../../../components/ui/TimePicker";
-import {
-  BorderRadius,
-  Colors,
-  Spacing,
-  Typography,
-} from "../../../constants/design";
+import { BorderRadius, Spacing, Typography } from "../../../constants/design";
 import {
   ensureNotificationSettings,
   updateNotificationSettings,
 } from "../../../lib/database/models/notification-settings";
 import { ensureUserExists } from "../../../lib/database/models/user";
+import { useThemeColors } from "../../../lib/hooks/useThemeColors";
 import { NotificationSettings } from "../../../types/database";
 
-const REMIND_BEFORE_OPTIONS = [0, 5, 10, 15, 30];
-const REMIND_AFTER_OPTIONS = [0, 15, 30, 60];
-const SNOOZE_OPTIONS = [5, 10, 15, 30];
-const SOUND_OPTIONS = ["default", "gentle", "loud", "vibrate"];
+const REMIND_BEFORE_OPTIONS = [
+  { label: "Disabled", value: 0 },
+  { label: "5 minutes before", value: 5 },
+  { label: "10 minutes before", value: 10 },
+  { label: "15 minutes before", value: 15 },
+  { label: "30 minutes before", value: 30 },
+  { label: "1 hour before", value: 60 },
+];
+
+const REMIND_AFTER_OPTIONS = [
+  { label: "Disabled", value: 0 },
+  { label: "15 minutes after", value: 15 },
+  { label: "30 minutes after", value: 30 },
+  { label: "1 hour after", value: 60 },
+  { label: "2 hours after", value: 120 },
+];
+
+const SNOOZE_OPTIONS = [
+  { label: "5 minutes", value: 5 },
+  { label: "10 minutes", value: 10 },
+  { label: "15 minutes", value: 15 },
+  { label: "30 minutes", value: 30 },
+  { label: "1 hour", value: 60 },
+];
+
+const SOUND_OPTIONS = [
+  { label: "Default", value: "default", icon: "volume-high" as const },
+  { label: "Gentle", value: "gentle", icon: "volume-low" as const },
+  { label: "Loud", value: "loud", icon: "volume-high" as const },
+  { label: "Vibrate Only", value: "vibrate", icon: "phone-portrait" as const },
+];
 
 export default function NotificationSettingsScreen() {
-  const colorScheme = useColorScheme();
-  const colors = colorScheme === "dark" ? Colors.dark : Colors.light;
+  const colors = useThemeColors();
 
   const [settings, setSettings] = useState<NotificationSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [permissionStatus, setPermissionStatus] =
+    useState<string>("undetermined");
+  const [testingNotification, setTestingNotification] = useState(false);
 
   const [showRemindBeforeModal, setShowRemindBeforeModal] = useState(false);
   const [showRemindAfterModal, setShowRemindAfterModal] = useState(false);
@@ -48,19 +76,82 @@ export default function NotificationSettingsScreen() {
   const [showDndStartModal, setShowDndStartModal] = useState(false);
   const [showDndEndModal, setShowDndEndModal] = useState(false);
 
+  const checkPermissions = useCallback(async () => {
+    const { status } = await Notifications.getPermissionsAsync();
+    setPermissionStatus(status);
+    return status;
+  }, []);
+
+  const requestPermissions = useCallback(async () => {
+    const { status } = await Notifications.requestPermissionsAsync();
+    setPermissionStatus(status);
+
+    if (status !== "granted") {
+      Alert.alert(
+        "Permissions Required",
+        "Please enable notifications in your device settings to receive medication reminders.",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Open Settings",
+            onPress: () => {
+              if (Platform.OS === "ios") {
+                Linking.openURL("app-settings:");
+              } else {
+                Linking.openSettings();
+              }
+            },
+          },
+        ]
+      );
+    }
+
+    return status;
+  }, []);
+
+  const sendTestNotification = useCallback(async () => {
+    try {
+      setTestingNotification(true);
+
+      const status = await checkPermissions();
+      if (status !== "granted") {
+        await requestPermissions();
+        return;
+      }
+
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: "Test Notification 💊",
+          body: "This is how your medication reminders will look!",
+          sound: settings?.sound === "vibrate" ? undefined : true,
+          vibrate: settings?.vibration ? [0, 250, 250, 250] : undefined,
+        },
+        trigger: null, // Send immediately
+      });
+
+      Alert.alert("Success", "Test notification sent!");
+    } catch (error) {
+      console.error("Error sending test notification:", error);
+      Alert.alert("Error", "Failed to send test notification");
+    } finally {
+      setTestingNotification(false);
+    }
+  }, [settings, checkPermissions, requestPermissions]);
+
   const loadSettings = useCallback(async () => {
     try {
       setLoading(true);
       const user = await ensureUserExists();
       const notifSettings = await ensureNotificationSettings(user.id);
       setSettings(notifSettings);
+      await checkPermissions();
     } catch (error) {
       console.error("Error loading settings:", error);
       Alert.alert("Error", "Failed to load notification settings");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [checkPermissions]);
 
   React.useEffect(() => {
     loadSettings();
@@ -92,6 +183,32 @@ export default function NotificationSettingsScreen() {
     return `${displayHour}:${minutes} ${ampm}`;
   };
 
+  const getPermissionStatusInfo = () => {
+    switch (permissionStatus) {
+      case "granted":
+        return {
+          icon: "checkmark-circle" as const,
+          color: colors.success,
+          text: "Notifications Enabled",
+          description: "You'll receive medication reminders",
+        };
+      case "denied":
+        return {
+          icon: "close-circle" as const,
+          color: colors.danger,
+          text: "Notifications Disabled",
+          description: "Enable in device settings to receive reminders",
+        };
+      default:
+        return {
+          icon: "alert-circle" as const,
+          color: colors.warning,
+          text: "Permission Required",
+          description: "Tap to enable notification permissions",
+        };
+    }
+  };
+
   if (loading) {
     return <LoadingSpinner fullScreen />;
   }
@@ -99,6 +216,9 @@ export default function NotificationSettingsScreen() {
   if (!settings) {
     return null;
   }
+
+  const permissionInfo = getPermissionStatusInfo();
+  const needsPermission = permissionStatus !== "granted";
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -113,6 +233,81 @@ export default function NotificationSettingsScreen() {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
       >
+        {/* Permission Status Banner */}
+        {needsPermission && (
+          <TouchableOpacity
+            style={[
+              styles.permissionBanner,
+              {
+                backgroundColor: `${permissionInfo.color}15`,
+                borderColor: permissionInfo.color,
+              },
+            ]}
+            onPress={requestPermissions}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name={permissionInfo.icon}
+              size={24}
+              color={permissionInfo.color}
+              style={styles.bannerIcon}
+            />
+            <View style={styles.bannerTextContainer}>
+              <Text
+                style={[styles.bannerTitle, { color: permissionInfo.color }]}
+              >
+                {permissionInfo.text}
+              </Text>
+              <Text
+                style={[
+                  styles.bannerDescription,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                {permissionInfo.description}
+              </Text>
+            </View>
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color={permissionInfo.color}
+            />
+          </TouchableOpacity>
+        )}
+
+        {/* Permission Status Indicator (when granted) */}
+        {!needsPermission && (
+          <View
+            style={[
+              styles.permissionCard,
+              { backgroundColor: `${colors.success}10` },
+            ]}
+          >
+            <View style={styles.permissionCardContent}>
+              <Ionicons
+                name="checkmark-circle"
+                size={20}
+                color={colors.success}
+              />
+              <Text
+                style={[styles.permissionCardText, { color: colors.success }]}
+              >
+                Notifications are enabled
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* Test Notification Button */}
+        <Button
+          title="Send Test Notification"
+          onPress={sendTestNotification}
+          variant="secondary"
+          loading={testingNotification}
+          disabled={needsPermission}
+          style={styles.testButton}
+        />
+
         {/* General Settings */}
         <Card style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
@@ -223,7 +418,7 @@ export default function NotificationSettingsScreen() {
           <TouchableOpacity
             style={styles.settingItem}
             onPress={() => setShowRemindBeforeModal(true)}
-            disabled={saving}
+            disabled={saving || needsPermission}
           >
             <View style={styles.settingLeft}>
               <Ionicons
@@ -242,9 +437,9 @@ export default function NotificationSettingsScreen() {
                     { color: colors.textSecondary },
                   ]}
                 >
-                  {settings.remind_before_minutes === 0
-                    ? "Disabled"
-                    : `${settings.remind_before_minutes} minutes before`}
+                  {REMIND_BEFORE_OPTIONS.find(
+                    (o) => o.value === settings.remind_before_minutes
+                  )?.label || "Not set"}
                 </Text>
               </View>
             </View>
@@ -258,7 +453,7 @@ export default function NotificationSettingsScreen() {
           <TouchableOpacity
             style={styles.settingItem}
             onPress={() => setShowRemindAfterModal(true)}
-            disabled={saving}
+            disabled={saving || needsPermission}
           >
             <View style={styles.settingLeft}>
               <Ionicons
@@ -277,9 +472,9 @@ export default function NotificationSettingsScreen() {
                     { color: colors.textSecondary },
                   ]}
                 >
-                  {settings.remind_after_missed_minutes === 0
-                    ? "Disabled"
-                    : `${settings.remind_after_missed_minutes} minutes after`}
+                  {REMIND_AFTER_OPTIONS.find(
+                    (o) => o.value === settings.remind_after_missed_minutes
+                  )?.label || "Not set"}
                 </Text>
               </View>
             </View>
@@ -293,7 +488,7 @@ export default function NotificationSettingsScreen() {
           <TouchableOpacity
             style={styles.settingItem}
             onPress={() => setShowSnoozeModal(true)}
-            disabled={saving}
+            disabled={saving || needsPermission}
           >
             <View style={styles.settingLeft}>
               <Ionicons
@@ -312,7 +507,9 @@ export default function NotificationSettingsScreen() {
                     { color: colors.textSecondary },
                   ]}
                 >
-                  {settings.snooze_duration_minutes} minutes
+                  {SNOOZE_OPTIONS.find(
+                    (o) => o.value === settings.snooze_duration_minutes
+                  )?.label || "Not set"}
                 </Text>
               </View>
             </View>
@@ -474,7 +671,7 @@ export default function NotificationSettingsScreen() {
           <TouchableOpacity
             style={styles.settingItem}
             onPress={() => setShowSoundModal(true)}
-            disabled={saving}
+            disabled={saving || needsPermission}
           >
             <View style={styles.settingLeft}>
               <Ionicons
@@ -493,8 +690,8 @@ export default function NotificationSettingsScreen() {
                     { color: colors.textSecondary },
                   ]}
                 >
-                  {settings.sound.charAt(0).toUpperCase() +
-                    settings.sound.slice(1)}
+                  {SOUND_OPTIONS.find((o) => o.value === settings.sound)
+                    ?.label || "Default"}
                 </Text>
               </View>
             </View>
@@ -507,156 +704,54 @@ export default function NotificationSettingsScreen() {
         </Card>
       </ScrollView>
 
-      {/* Modals */}
-      <Modal
+      {/* Option Modals */}
+      <OptionModal
         visible={showRemindBeforeModal}
         onClose={() => setShowRemindBeforeModal(false)}
         title="Remind Before Dose"
-      >
-        <View style={styles.modalContent}>
-          {REMIND_BEFORE_OPTIONS.map((minutes) => (
-            <TouchableOpacity
-              key={minutes}
-              style={[
-                styles.optionItem,
-                {
-                  backgroundColor:
-                    settings.remind_before_minutes === minutes
-                      ? `${colors.primary}20`
-                      : colors.surfaceSecondary,
-                  borderColor:
-                    settings.remind_before_minutes === minutes
-                      ? colors.primary
-                      : colors.border,
-                },
-              ]}
-              onPress={() => {
-                handleUpdateSetting({ remind_before_minutes: minutes });
-                setShowRemindBeforeModal(false);
-              }}
-            >
-              <Text style={[styles.optionText, { color: colors.text }]}>
-                {minutes === 0 ? "Disabled" : `${minutes} minutes before`}
-              </Text>
-              {settings.remind_before_minutes === minutes && (
-                <Ionicons name="checkmark" size={24} color={colors.primary} />
-              )}
-            </TouchableOpacity>
-          ))}
-        </View>
-      </Modal>
+        options={REMIND_BEFORE_OPTIONS}
+        selectedValue={settings.remind_before_minutes}
+        onSelect={(value) => {
+          handleUpdateSetting({ remind_before_minutes: value as number });
+          setShowRemindBeforeModal(false);
+        }}
+      />
 
-      <Modal
+      <OptionModal
         visible={showRemindAfterModal}
         onClose={() => setShowRemindAfterModal(false)}
         title="Remind After Missed"
-      >
-        <View style={styles.modalContent}>
-          {REMIND_AFTER_OPTIONS.map((minutes) => (
-            <TouchableOpacity
-              key={minutes}
-              style={[
-                styles.optionItem,
-                {
-                  backgroundColor:
-                    settings.remind_after_missed_minutes === minutes
-                      ? `${colors.primary}20`
-                      : colors.surfaceSecondary,
-                  borderColor:
-                    settings.remind_after_missed_minutes === minutes
-                      ? colors.primary
-                      : colors.border,
-                },
-              ]}
-              onPress={() => {
-                handleUpdateSetting({ remind_after_missed_minutes: minutes });
-                setShowRemindAfterModal(false);
-              }}
-            >
-              <Text style={[styles.optionText, { color: colors.text }]}>
-                {minutes === 0 ? "Disabled" : `${minutes} minutes after`}
-              </Text>
-              {settings.remind_after_missed_minutes === minutes && (
-                <Ionicons name="checkmark" size={24} color={colors.primary} />
-              )}
-            </TouchableOpacity>
-          ))}
-        </View>
-      </Modal>
+        options={REMIND_AFTER_OPTIONS}
+        selectedValue={settings.remind_after_missed_minutes}
+        onSelect={(value) => {
+          handleUpdateSetting({ remind_after_missed_minutes: value as number });
+          setShowRemindAfterModal(false);
+        }}
+      />
 
-      <Modal
+      <OptionModal
         visible={showSnoozeModal}
         onClose={() => setShowSnoozeModal(false)}
         title="Snooze Duration"
-      >
-        <View style={styles.modalContent}>
-          {SNOOZE_OPTIONS.map((minutes) => (
-            <TouchableOpacity
-              key={minutes}
-              style={[
-                styles.optionItem,
-                {
-                  backgroundColor:
-                    settings.snooze_duration_minutes === minutes
-                      ? `${colors.primary}20`
-                      : colors.surfaceSecondary,
-                  borderColor:
-                    settings.snooze_duration_minutes === minutes
-                      ? colors.primary
-                      : colors.border,
-                },
-              ]}
-              onPress={() => {
-                handleUpdateSetting({ snooze_duration_minutes: minutes });
-                setShowSnoozeModal(false);
-              }}
-            >
-              <Text style={[styles.optionText, { color: colors.text }]}>
-                {minutes} minutes
-              </Text>
-              {settings.snooze_duration_minutes === minutes && (
-                <Ionicons name="checkmark" size={24} color={colors.primary} />
-              )}
-            </TouchableOpacity>
-          ))}
-        </View>
-      </Modal>
+        options={SNOOZE_OPTIONS}
+        selectedValue={settings.snooze_duration_minutes}
+        onSelect={(value) => {
+          handleUpdateSetting({ snooze_duration_minutes: value as number });
+          setShowSnoozeModal(false);
+        }}
+      />
 
-      <Modal
+      <OptionModal
         visible={showSoundModal}
         onClose={() => setShowSoundModal(false)}
         title="Notification Sound"
-      >
-        <View style={styles.modalContent}>
-          {SOUND_OPTIONS.map((sound) => (
-            <TouchableOpacity
-              key={sound}
-              style={[
-                styles.optionItem,
-                {
-                  backgroundColor:
-                    settings.sound === sound
-                      ? `${colors.primary}20`
-                      : colors.surfaceSecondary,
-                  borderColor:
-                    settings.sound === sound ? colors.primary : colors.border,
-                },
-              ]}
-              onPress={() => {
-                handleUpdateSetting({ sound });
-                setShowSoundModal(false);
-              }}
-            >
-              <Text style={[styles.optionText, { color: colors.text }]}>
-                {sound.charAt(0).toUpperCase() + sound.slice(1)}
-              </Text>
-              {settings.sound === sound && (
-                <Ionicons name="checkmark" size={24} color={colors.primary} />
-              )}
-            </TouchableOpacity>
-          ))}
-        </View>
-      </Modal>
+        options={SOUND_OPTIONS}
+        selectedValue={settings.sound}
+        onSelect={(value) => {
+          handleUpdateSetting({ sound: value as string });
+          setShowSoundModal(false);
+        }}
+      />
 
       <TimePicker
         visible={showDndStartModal}
@@ -687,6 +782,45 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: Spacing.md,
     paddingBottom: Spacing.xl,
+  },
+  permissionBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 2,
+    marginBottom: Spacing.md,
+  },
+  bannerIcon: {
+    marginRight: Spacing.md,
+  },
+  bannerTextContainer: {
+    flex: 1,
+  },
+  bannerTitle: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.semibold,
+    marginBottom: Spacing.xs,
+  },
+  bannerDescription: {
+    fontSize: Typography.fontSize.sm,
+  },
+  permissionCard: {
+    marginBottom: Spacing.md,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.lg,
+  },
+  permissionCardContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  permissionCardText: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  testButton: {
+    marginBottom: Spacing.md,
   },
   section: {
     marginBottom: Spacing.md,
@@ -723,20 +857,4 @@ const styles = StyleSheet.create({
   settingDescription: {
     fontSize: Typography.fontSize.sm,
   },
-  modalContent: {
-    gap: Spacing.sm,
-  },
-  optionItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: Spacing.lg,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 2,
-  },
-  optionText: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.medium,
-  },
 });
-
