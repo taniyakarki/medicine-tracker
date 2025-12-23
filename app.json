@@ -85,7 +85,8 @@
           "photosPermission": "The app needs access to your photos to let you select medicine images.",
           "cameraPermission": "The app needs access to your camera to let you take photos of medicines."
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
