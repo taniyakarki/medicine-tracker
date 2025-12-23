@@ -317,10 +317,12 @@ const colors = useThemeColors();
 
 **Location**: `/lib/context/`
 
+**⚠️ CRITICAL**: Always use `AppDataContext` (via `useAppData()` hook) for accessing medicines, doses, and stats. This ensures data synchronization across all screens and prevents stale data issues.
+
 The app uses a centralized context system that provides access to:
 - **Theme**: Colors, dark mode status, theme preferences
 - **User**: User profile data and operations
-- **App Data**: Medicines, doses, and statistics
+- **App Data**: Medicines, doses, and statistics (synchronized across app)
 
 #### AppContext Structure
 
@@ -345,6 +347,7 @@ context = {
   appData: {
     medicines: { data, loading, error, refresh },
     todayDoses: { data, loading, error, refresh },
+    upcomingDoses: { data, loading, error, refresh },
     stats: { data, loading, error, refresh },
     refreshAll: () => Promise<void>,
   },
@@ -427,31 +430,54 @@ export const ProfileScreen = () => {
 };
 ```
 
-#### Usage: App Data Context
+#### Usage: App Data Context (✅ RECOMMENDED for Medicines/Doses/Stats)
+
+**⚠️ ALWAYS use `useAppData()` instead of individual hooks for medicines, doses, and stats**
 
 ```typescript
-import { useAppData } from '../../lib/hooks';
+import { useAppData } from '../../lib/context/AppDataContext';
 
 export const DashboardScreen = () => {
-  const { medicines, todayDoses, stats, refreshAll } = useAppData();
+  const appData = useAppData();
 
-  // Access medicines
-  const { data: medicineList, loading, error, refresh } = medicines;
+  // ✅ Access medicines from context (synchronized)
+  const medicines = appData.medicines.data;
+  const medicinesLoading = appData.medicines.loading;
 
-  // Access today's doses
-  const { data: doses } = todayDoses;
+  // ✅ Access today's doses from context (synchronized)
+  const todayDoses = appData.todayDoses.data;
 
-  // Access statistics
-  const { data: statistics } = stats;
+  // ✅ Access upcoming doses from context (synchronized)
+  const upcomingDoses = appData.upcomingDoses.data;
 
-  // Refresh all data at once
+  // ✅ Access statistics from context (synchronized)
+  const stats = appData.stats.data;
+
+  // ✅ Refresh all data at once (ensures consistency)
   const handleRefreshAll = async () => {
-    await refreshAll();
+    await appData.refreshAll();
+  };
+
+  // ✅ Refresh specific data
+  const handleRefreshMedicines = async () => {
+    await appData.medicines.refresh();
   };
 
   return <View>{/* Use app data */}</View>;
 };
 ```
+
+**Why use AppDataContext?**
+- ✅ Data is synchronized across all screens
+- ✅ Single source of truth for medicines, doses, and stats
+- ✅ Prevents stale data issues
+- ✅ Efficient caching and refresh management
+- ✅ `refreshAll()` ensures all data updates together
+
+**When NOT to use AppDataContext:**
+- ❌ For theme/colors (use `useThemeColors()` instead)
+- ❌ For user profile (use `useUser()` instead)
+- ❌ For one-off queries that don't need synchronization
 
 #### Usage: Complete App Context
 
@@ -1138,6 +1164,60 @@ See `/docs/fixes/filter-chips-scroll-persistence-ios-fix.md` for the specific is
 4. Implement CRUD operations
 5. Add foreign key constraints
 6. Create custom hook if needed
+
+### Notification Scheduling Rules
+
+**Location**: `/lib/notifications/scheduler.ts`
+
+**Critical Rules for Notification Scheduling:**
+
+1. **Seconds Must Always Be 0**
+   - All scheduled times MUST have seconds set to 0
+   - Use `scheduledTime.setHours(hours, minutes, 0, 0)` to ensure seconds and milliseconds are 0
+   - This ensures consistent notification timing
+
+2. **First Schedule Starts from Medicine Start Date**
+   - When scheduling notifications, the first occurrence should be based on `medicine.start_date`
+   - For daily/specific days: Start from `Math.max(medicineStartDate, now)`
+   - For interval-based: First occurrence is exactly at `medicine.start_date` + schedule time
+
+3. **Only Schedule Future Notifications**
+   - NEVER schedule notifications for past times
+   - Always check: `scheduledTime > bufferTime` (2-minute buffer)
+   - Skip scheduling if the time has already passed
+
+4. **Notification Scheduling Flow:**
+```typescript
+// 1. Get medicine and schedules
+const medicine = await getMedicineById(medicineId);
+const schedules = await getActiveSchedulesByMedicineId(medicineId);
+
+// 2. Calculate start date (medicine start or now, whichever is later)
+const medicineStartDate = new Date(medicine.start_date);
+const now = new Date();
+const bufferTime = new Date(now.getTime() + 2 * 60 * 1000);
+
+// 3. For each schedule, create notifications
+const [hours, minutes] = schedule.time.split(":").map(Number);
+const scheduledTime = new Date(currentDate);
+scheduledTime.setHours(hours, minutes, 0, 0); // ⚠️ ALWAYS set seconds to 0
+
+// 4. Only schedule if in the future
+if (scheduledTime > bufferTime && scheduledTime <= endDate) {
+  await scheduleNotification({ ... });
+}
+```
+
+5. **Interval-Based Scheduling Special Case:**
+   - First occurrence is ALWAYS at `medicine.start_date` + schedule time
+   - Subsequent occurrences are calculated by adding `interval_hours`
+   - Past occurrences (within 24 hours) are created as "missed" doses
+   - Only future occurrences get notifications scheduled
+
+**Functions:**
+- `scheduleNotification()`: Creates a single notification (normalizes seconds to 0, checks if future)
+- `scheduleMedicineNotifications()`: Schedules all notifications for a medicine (7 days ahead)
+- `rescheduleAllNotifications()`: Reschedules all active medicines
 
 ---
 

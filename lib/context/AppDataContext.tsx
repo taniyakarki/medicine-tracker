@@ -1,17 +1,25 @@
 import React, {
   createContext,
-  useContext,
-  useCallback,
   ReactNode,
+  useCallback,
+  useContext,
   useMemo,
 } from "react";
-import { MedicineWithNextDose, DoseWithMedicine, MedicineStats } from "../../types/medicine";
+import {
+  DoseWithMedicine,
+  MedicineStats,
+  MedicineWithNextDose,
+} from "../../types/medicine";
+import {
+  useMedicineStats,
+  useTodayDoses,
+  useUpcomingDoses,
+} from "../hooks/useDoses";
 import { useMedicines } from "../hooks/useMedicines";
-import { useTodayDoses, useMedicineStats } from "../hooks/useDoses";
 
 /**
  * App Data Context
- * 
+ *
  * Provides centralized access to app data:
  * - Medicines
  * - Today's doses
@@ -30,6 +38,12 @@ interface AppDataContextType {
     refresh: () => Promise<void>;
   };
   todayDoses: {
+    data: DoseWithMedicine[];
+    loading: boolean;
+    error: string | null;
+    refresh: () => Promise<void>;
+  };
+  upcomingDoses: {
     data: DoseWithMedicine[];
     loading: boolean;
     error: string | null;
@@ -62,7 +76,9 @@ interface AppDataProviderProps {
 // Provider Component
 // ============================================================================
 
-export const AppDataProvider: React.FC<AppDataProviderProps> = ({ children }) => {
+export const AppDataProvider: React.FC<AppDataProviderProps> = ({
+  children,
+}) => {
   // Use existing hooks
   const {
     medicines,
@@ -79,6 +95,13 @@ export const AppDataProvider: React.FC<AppDataProviderProps> = ({ children }) =>
   } = useTodayDoses();
 
   const {
+    doses: upcomingDoses,
+    loading: upcomingLoading,
+    error: upcomingError,
+    refresh: refreshUpcoming,
+  } = useUpcomingDoses(24);
+
+  const {
     stats,
     loading: statsLoading,
     error: statsError,
@@ -90,9 +113,10 @@ export const AppDataProvider: React.FC<AppDataProviderProps> = ({ children }) =>
     await Promise.all([
       refreshMedicines(),
       refreshDoses(),
+      refreshUpcoming(),
       refreshStats(),
     ]);
-  }, [refreshMedicines, refreshDoses, refreshStats]);
+  }, [refreshMedicines, refreshDoses, refreshUpcoming, refreshStats]);
 
   const contextValue = useMemo(
     () => ({
@@ -107,6 +131,12 @@ export const AppDataProvider: React.FC<AppDataProviderProps> = ({ children }) =>
         loading: dosesLoading,
         error: dosesError,
         refresh: refreshDoses,
+      },
+      upcomingDoses: {
+        data: upcomingDoses,
+        loading: upcomingLoading,
+        error: upcomingError,
+        refresh: refreshUpcoming,
       },
       stats: {
         data: stats,
@@ -125,6 +155,10 @@ export const AppDataProvider: React.FC<AppDataProviderProps> = ({ children }) =>
       dosesLoading,
       dosesError,
       refreshDoses,
+      upcomingDoses,
+      upcomingLoading,
+      upcomingError,
+      refreshUpcoming,
       stats,
       statsLoading,
       statsError,
@@ -151,4 +185,3 @@ export const useAppData = (): AppDataContextType => {
   }
   return context;
 };
-

@@ -1,11 +1,11 @@
 import React from "react";
-import { View, ViewStyle } from "react-native";
+import { View, ViewStyle, Text, StyleProp } from "react-native";
 import { BorderRadius, Shadows, Spacing } from "../../constants/design";
 import { useTheme } from "../../lib/context/AppContext";
 
 interface CardProps {
   children: React.ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   padding?: keyof typeof Spacing;
   elevated?: boolean;
   onPress?: () => void;
@@ -26,5 +26,21 @@ export const Card: React.FC<CardProps> = ({
     ...(elevated ? Shadows.md : {}),
   };
 
-  return <View style={[cardStyle, style]}>{children}</View>;
+  // Process children to wrap text strings in Text component
+  const processedChildren = React.Children.map(children, (child) => {
+    // Skip null, undefined, false, empty strings
+    if (child === null || child === undefined || child === false || child === "") {
+      return null;
+    }
+
+    // If child is a string or number, wrap it in a Text component
+    if (typeof child === "string" || typeof child === "number") {
+      return <Text style={{ color: colors.text }}>{child}</Text>;
+    }
+
+    // Return React elements as-is
+    return child;
+  });
+
+  return <View style={[cardStyle, style]}>{processedChildren}</View>;
 };

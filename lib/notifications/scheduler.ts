@@ -14,7 +14,11 @@ export interface ScheduleNotificationParams {
   scheduleId: string;
 }
 
-const isInDndPeriod = (time: Date, dndStart?: string, dndEnd?: string): boolean => {
+const isInDndPeriod = (
+  time: Date,
+  dndStart?: string,
+  dndEnd?: string
+): boolean => {
   if (!dndStart || !dndEnd) return false;
 
   const [startHour, startMin] = dndStart.split(":").map(Number);
@@ -39,10 +43,16 @@ export const scheduleNotification = async (
   const { medicineId, medicineName, dosage, unit, scheduledTime, scheduleId } =
     params;
 
+  // Ensure seconds are always 0
+  const normalizedScheduledTime = new Date(scheduledTime);
+  normalizedScheduledTime.setSeconds(0, 0);
+
   // Get notification settings
-  const { ensureNotificationSettings } = await import("../database/models/notification-settings");
+  const { ensureNotificationSettings } = await import(
+    "../database/models/notification-settings"
+  );
   const { ensureUserExists } = await import("../database/models/user");
-  
+
   let activeUserId = userId;
   if (!activeUserId) {
     const user = await ensureUserExists();
@@ -56,18 +66,32 @@ export const scheduleNotification = async (
     return "";
   }
 
+  // Only schedule if the time is in the future
+  const now = new Date();
+  if (normalizedScheduledTime <= now) {
+    console.log(
+      `Skipping notification for ${medicineName} - scheduled time is not in the future`
+    );
+    return "";
+  }
+
   // Check DND settings
   const medicine = await getMedicineById(medicineId);
-  const isInDnd = settings.dnd_enabled && 
-                  isInDndPeriod(scheduledTime, settings.dnd_start_time, settings.dnd_end_time);
-  
+  const isInDnd =
+    settings.dnd_enabled &&
+    isInDndPeriod(
+      normalizedScheduledTime,
+      settings.dnd_start_time,
+      settings.dnd_end_time
+    );
+
   // Skip notification if in DND and medicine is not critical
   if (isInDnd && !settings.dnd_allow_critical) {
     // Still create the dose record but don't schedule notification
     await createDose({
       medicine_id: medicineId,
       schedule_id: scheduleId,
-      scheduled_time: scheduledTime.toISOString(),
+      scheduled_time: normalizedScheduledTime.toISOString(),
       status: "scheduled",
     });
     return "";
@@ -77,14 +101,17 @@ export const scheduleNotification = async (
   const doseId = await createDose({
     medicine_id: medicineId,
     schedule_id: scheduleId,
-    scheduled_time: scheduledTime.toISOString(),
+    scheduled_time: normalizedScheduledTime.toISOString(),
     status: "scheduled",
   });
 
   // Schedule "remind before" notification if enabled
   if (settings.remind_before_minutes > 0) {
-    const remindBeforeTime = new Date(scheduledTime.getTime() - settings.remind_before_minutes * 60 * 1000);
-    
+    const remindBeforeTime = new Date(
+      normalizedScheduledTime.getTime() -
+        settings.remind_before_minutes * 60 * 1000
+    );
+
     if (remindBeforeTime > new Date()) {
       await Notifications.scheduleNotificationAsync({
         content: {
@@ -95,7 +122,7 @@ export const scheduleNotification = async (
             medicineId,
             medicineName,
             dosage: `${dosage} ${unit}`,
-            scheduledTime: scheduledTime.toISOString(),
+            scheduledTime: normalizedScheduledTime.toISOString(),
             type: "medicine_reminder_before",
           },
           categoryIdentifier: "medicine-reminder",
@@ -120,7 +147,7 @@ export const scheduleNotification = async (
         medicineId,
         medicineName,
         dosage: `${dosage} ${unit}`,
-        scheduledTime: scheduledTime.toISOString(),
+        scheduledTime: normalizedScheduledTime.toISOString(),
         type: "medicine_reminder",
       },
       categoryIdentifier: "medicine-reminder",
@@ -128,7 +155,7 @@ export const scheduleNotification = async (
       priority: Platform.OS === "android" ? "max" : "high",
     },
     trigger: {
-      date: scheduledTime,
+      date: normalizedScheduledTime,
       channelId: "medicine-reminders",
     },
   });
@@ -162,21 +189,26 @@ export const scheduleMedicineNotifications = async (
     }
 
     // Cancel all existing notifications for this medicine
-    const allScheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
+    const allScheduledNotifications =
+      await Notifications.getAllScheduledNotificationsAsync();
     const medicineNotifications = allScheduledNotifications.filter(
       (notification) => notification.content.data?.medicineId === medicineId
     );
-    
+
     for (const notification of medicineNotifications) {
-      await Notifications.cancelScheduledNotificationAsync(notification.identifier);
+      await Notifications.cancelScheduledNotificationAsync(
+        notification.identifier
+      );
     }
-    
-    console.log(`Cancelled ${medicineNotifications.length} notifications for medicine ${medicineId}`);
+
+    console.log(
+      `Cancelled ${medicineNotifications.length} notifications for medicine ${medicineId}`
+    );
 
     // Delete old scheduled doses for this medicine that are in the future
     // This prevents duplicates when rescheduling
     const { executeQuery } = await import("../database/operations");
-    
+
     try {
       await executeQuery(
         `DELETE FROM doses 
@@ -190,15 +222,23 @@ export const scheduleMedicineNotifications = async (
       // Continue with scheduling even if deletion fails
     }
 
+    // Get medicine start date
+    const medicineStartDate = new Date(medicine.start_date);
+
     for (const schedule of schedules) {
       if (medicine.frequency === "daily") {
         // Daily frequency - schedule for each day
-        let currentDate = new Date(now);
         const [hours, minutes] = schedule.time.split(":").map(Number);
+
+        // Start from medicine start date or today, whichever is later
+        let currentDate = new Date(
+          Math.max(medicineStartDate.getTime(), now.getTime())
+        );
+        currentDate.setHours(0, 0, 0, 0); // Reset to start of day
 
         while (currentDate <= endDate) {
           const scheduledTime = new Date(currentDate);
-          scheduledTime.setHours(hours, minutes, 0, 0);
+          scheduledTime.setHours(hours, minutes, 0, 0); // Always set seconds to 0
 
           // Only schedule if it's in the future (with buffer)
           if (scheduledTime > bufferTime && scheduledTime <= endDate) {
@@ -220,16 +260,22 @@ export const scheduleMedicineNotifications = async (
       ) {
         // Specific days frequency - schedule only on selected days
         const daysOfWeek = JSON.parse(schedule.days_of_week);
-        let currentDate = new Date(now);
+        const [hours, minutes] = schedule.time.split(":").map(Number);
+
+        // Start from medicine start date or today, whichever is later
+        let currentDate = new Date(
+          Math.max(medicineStartDate.getTime(), now.getTime())
+        );
+        currentDate.setHours(0, 0, 0, 0); // Reset to start of day
 
         while (currentDate <= endDate) {
           const dayOfWeek = currentDate.getDay();
 
           if (daysOfWeek.includes(dayOfWeek)) {
-            const [hours, minutes] = schedule.time.split(":").map(Number);
             const scheduledTime = new Date(currentDate);
-            scheduledTime.setHours(hours, minutes, 0, 0);
+            scheduledTime.setHours(hours, minutes, 0, 0); // Always set seconds to 0
 
+            // Only schedule if it's in the future (with buffer)
             if (scheduledTime > bufferTime && scheduledTime <= endDate) {
               await scheduleNotification({
                 medicineId: medicine.id,
@@ -248,10 +294,10 @@ export const scheduleMedicineNotifications = async (
         // Interval-based frequency - schedule at regular intervals
         const [hours, minutes] = schedule.time.split(":").map(Number);
 
-        // Start from the medicine's start date
+        // Start from the medicine's start date - this is the first occurrence
         const startDate = new Date(medicine.start_date);
         let firstOccurrence = new Date(startDate);
-        firstOccurrence.setHours(hours, minutes, 0, 0);
+        firstOccurrence.setHours(hours, minutes, 0, 0); // Always set seconds to 0
 
         const intervalMillis = schedule.interval_hours * 60 * 60 * 1000;
 
@@ -297,9 +343,10 @@ export const scheduleMedicineNotifications = async (
           firstOccurrence = pastOccurrence;
         }
 
-        // Schedule future occurrences
+        // Schedule future occurrences - only if they are in the future
         let nextOccurrence = new Date(firstOccurrence);
         while (nextOccurrence <= endDate) {
+          // Only schedule if it's in the future (with buffer)
           if (nextOccurrence > bufferTime) {
             await scheduleNotification({
               medicineId: medicine.id,
@@ -374,9 +421,11 @@ export const snoozeNotification = async (
   userId?: string
 ): Promise<void> => {
   // Get notification settings for snooze duration
-  const { ensureNotificationSettings } = await import("../database/models/notification-settings");
+  const { ensureNotificationSettings } = await import(
+    "../database/models/notification-settings"
+  );
   const { ensureUserExists } = await import("../database/models/user");
-  
+
   let activeUserId = userId;
   if (!activeUserId) {
     const user = await ensureUserExists();

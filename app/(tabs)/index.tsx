@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect } from "expo-router";
-import React, { useCallback, useState, useMemo } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   Alert,
   RefreshControl,
@@ -23,17 +23,14 @@ import {
   Typography,
 } from "../../constants/design";
 import { useTheme } from "../../lib/context/AppContext";
+import { useAppData } from "../../lib/context/AppDataContext";
 import {
   getPastPendingDoses,
   markDoseAsSkipped,
   markDoseAsTaken,
 } from "../../lib/database/models/dose";
 import { ensureUserExists } from "../../lib/database/models/user";
-import {
-  useMedicineStats,
-  useRecentActivity,
-  useUpcomingDoses,
-} from "../../lib/hooks/useDoses";
+import { useRecentActivity } from "../../lib/hooks/useDoses";
 import {
   formatDateTime,
   formatTime,
@@ -45,13 +42,13 @@ import { DoseWithMedicine } from "../../types/medicine";
 
 export default function HomeScreen() {
   const { colors, isDark } = useTheme();
+  const appData = useAppData();
 
-  const {
-    stats,
-    loading: statsLoading,
-    refresh: refreshStats,
-  } = useMedicineStats();
-  const { doses: upcomingDoses, refresh: refreshDoses } = useUpcomingDoses(24);
+  // Use data from context for better synchronization
+  const stats = appData.stats.data;
+  const statsLoading = appData.stats.loading;
+  const upcomingDoses = appData.upcomingDoses.data;
+
   const { activity, refresh: refreshActivity } = useRecentActivity(5);
   const [pastDoses, setPastDoses] = useState<DoseWithMedicine[]>([]);
 
@@ -71,8 +68,7 @@ export default function HomeScreen() {
   // Reload data when screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      refreshStats();
-      refreshDoses();
+      appData.refreshAll();
       refreshActivity();
       loadPastDoses();
       // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -82,68 +78,72 @@ export default function HomeScreen() {
   const handleRefresh = async () => {
     setRefreshing(true);
     await Promise.all([
-      refreshStats(),
-      refreshDoses(),
+      appData.refreshAll(), // Refresh all context data
       refreshActivity(),
       loadPastDoses(),
     ]);
     setRefreshing(false);
   };
 
-  const handleTakeDose = useCallback(async (doseId: string) => {
-    try {
-      // Optimistically update past doses list
-      setPastDoses((prev) => prev.filter((dose) => dose.id !== doseId));
+  const handleTakeDose = useCallback(
+    async (doseId: string) => {
+      try {
+        // Optimistically update past doses list
+        setPastDoses((prev) => prev.filter((dose) => dose.id !== doseId));
 
-      // Mark dose as taken in database
-      await markDoseAsTaken(doseId);
+        // Mark dose as taken in database
+        await markDoseAsTaken(doseId);
 
-      // Refresh all data to ensure consistency
-      await Promise.all([
-        refreshStats(),
-        refreshDoses(),
-        refreshActivity(),
-        loadPastDoses(),
-      ]);
+        // Refresh all data to ensure consistency
+        await Promise.all([
+          appData.refreshAll(),
+          refreshActivity(),
+          loadPastDoses(),
+        ]);
 
-      Alert.alert("Success", "Dose marked as taken!");
-    } catch (error) {
-      console.error("Error marking dose as taken:", error);
-      Alert.alert("Error", "Failed to mark dose as taken");
+        Alert.alert("Success", "Dose marked as taken!");
+      } catch (error) {
+        console.error("Error marking dose as taken:", error);
+        Alert.alert("Error", "Failed to mark dose as taken");
 
-      // Reload data to revert optimistic update
-      await loadPastDoses();
-    }
-  }, [refreshStats, refreshDoses, refreshActivity, loadPastDoses]);
+        // Reload data to revert optimistic update
+        await loadPastDoses();
+      }
+    },
+    [appData, refreshActivity, loadPastDoses]
+  );
 
-  const handleSkipDose = useCallback(async (doseId: string) => {
-    try {
-      // Optimistically update past doses list
-      setPastDoses((prev) => prev.filter((dose) => dose.id !== doseId));
+  const handleSkipDose = useCallback(
+    async (doseId: string) => {
+      try {
+        // Optimistically update past doses list
+        setPastDoses((prev) => prev.filter((dose) => dose.id !== doseId));
 
-      // Mark dose as skipped in database
-      await markDoseAsSkipped(doseId);
+        // Mark dose as skipped in database
+        await markDoseAsSkipped(doseId);
 
-      // Refresh all data to ensure consistency
-      await Promise.all([
-        refreshStats(),
-        refreshDoses(),
-        refreshActivity(),
-        loadPastDoses(),
-      ]);
+        // Refresh all data to ensure consistency
+        await Promise.all([
+          appData.refreshAll(),
+          refreshActivity(),
+          loadPastDoses(),
+        ]);
 
-      Alert.alert("Success", "Dose marked as skipped");
-    } catch (error) {
-      console.error("Error marking dose as skipped:", error);
-      Alert.alert("Error", "Failed to mark dose as skipped");
+        Alert.alert("Success", "Dose marked as skipped");
+      } catch (error) {
+        console.error("Error marking dose as skipped:", error);
+        Alert.alert("Error", "Failed to mark dose as skipped");
 
-      // Reload data to revert optimistic update
-      await loadPastDoses();
-    }
-  }, [refreshStats, refreshDoses, refreshActivity, loadPastDoses]);
+        // Reload data to revert optimistic update
+        await loadPastDoses();
+      }
+    },
+    [appData, refreshActivity, loadPastDoses]
+  );
 
   const todayProgress = useMemo(
-    () => (stats.todayTotal > 0 ? (stats.todayTaken / stats.todayTotal) * 100 : 0),
+    () =>
+      stats.todayTotal > 0 ? (stats.todayTaken / stats.todayTotal) * 100 : 0,
     [stats.todayTotal, stats.todayTaken]
   );
 
@@ -159,11 +159,13 @@ export default function HomeScreen() {
     () =>
       upcomingDoses.map((dose) => ({
         id: dose.id,
-        time: formatTime(new Date(dose.scheduled_time).toTimeString().slice(0, 5)),
+        time: formatTime(
+          new Date(dose.scheduled_time).toTimeString().slice(0, 5)
+        ),
         title: dose.medicine.name,
-        subtitle: `${dose.medicine.dosage} ${dose.medicine.unit} • ${getTimeUntil(
-          new Date(dose.scheduled_time)
-        )}`,
+        subtitle: `${dose.medicine.dosage} ${
+          dose.medicine.unit
+        } • ${getTimeUntil(new Date(dose.scheduled_time))}`,
         status: getStatusForDose(dose),
       })),
     [upcomingDoses, getStatusForDose]
@@ -173,7 +175,9 @@ export default function HomeScreen() {
     () =>
       pastDoses.map((dose) => ({
         id: dose.id,
-        time: formatTime(new Date(dose.scheduled_time).toTimeString().slice(0, 5)),
+        time: formatTime(
+          new Date(dose.scheduled_time).toTimeString().slice(0, 5)
+        ),
         title: dose.medicine.name,
         subtitle: `${dose.medicine.dosage} ${dose.medicine.unit} • ${getTimeAgo(
           new Date(dose.scheduled_time)
@@ -206,7 +210,11 @@ export default function HomeScreen() {
             colors={
               (isDark
                 ? Gradients.dark.progress
-                : Gradients.light.progress) as unknown as readonly [string, string, ...string[]]
+                : Gradients.light.progress) as unknown as readonly [
+                string,
+                string,
+                ...string[]
+              ]
             }
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1.2 }}
@@ -244,9 +252,9 @@ export default function HomeScreen() {
             </View>
 
             <View style={styles.progressContent}>
-              <ProgressRing 
-                progress={todayProgress} 
-                size={140} 
+              <ProgressRing
+                progress={todayProgress}
+                size={140}
                 showLabel={true}
                 label="Today"
               />
@@ -385,7 +393,11 @@ export default function HomeScreen() {
               colors={
                 (isDark
                   ? Gradients.dark.streak
-                  : Gradients.light.streak) as unknown as readonly [string, string, ...string[]]
+                  : Gradients.light.streak) as unknown as readonly [
+                  string,
+                  string,
+                  ...string[]
+                ]
               }
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
@@ -411,7 +423,11 @@ export default function HomeScreen() {
               colors={
                 (isDark
                   ? Gradients.dark.adherence
-                  : Gradients.light.adherence) as unknown as readonly [string, string, ...string[]]
+                  : Gradients.light.adherence) as unknown as readonly [
+                  string,
+                  string,
+                  ...string[]
+                ]
               }
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
@@ -437,7 +453,11 @@ export default function HomeScreen() {
               colors={
                 (isDark
                   ? Gradients.dark.active
-                  : Gradients.light.active) as unknown as readonly [string, string, ...string[]]
+                  : Gradients.light.active) as unknown as readonly [
+                  string,
+                  string,
+                  ...string[]
+                ]
               }
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
@@ -520,8 +540,7 @@ export default function HomeScreen() {
                   styles.activityItem,
                   {
                     backgroundColor: colors.surfaceSecondary,
-                    marginBottom:
-                      index < activity.length - 1 ? Spacing.sm : 0,
+                    marginBottom: index < activity.length - 1 ? Spacing.sm : 0,
                   },
                 ]}
               >
@@ -531,10 +550,16 @@ export default function HomeScreen() {
                     {
                       backgroundColor:
                         dose.status === "taken"
-                          ? isDark ? colors.success + "20" : "#D1FAE5"
+                          ? isDark
+                            ? colors.success + "20"
+                            : "#D1FAE5"
                           : dose.status === "missed"
-                          ? isDark ? colors.danger + "20" : "#FEE2E2"
-                          : isDark ? colors.warning + "20" : "#FEF3C7",
+                          ? isDark
+                            ? colors.danger + "20"
+                            : "#FEE2E2"
+                          : isDark
+                          ? colors.warning + "20"
+                          : "#FEF3C7",
                     },
                   ]}
                 >
@@ -570,10 +595,16 @@ export default function HomeScreen() {
                         {
                           backgroundColor:
                             dose.status === "taken"
-                              ? isDark ? colors.success + "20" : "#D1FAE5"
+                              ? isDark
+                                ? colors.success + "20"
+                                : "#D1FAE5"
                               : dose.status === "missed"
-                              ? isDark ? colors.danger + "20" : "#FEE2E2"
-                              : isDark ? colors.warning + "20" : "#FEF3C7",
+                              ? isDark
+                                ? colors.danger + "20"
+                                : "#FEE2E2"
+                              : isDark
+                              ? colors.warning + "20"
+                              : "#FEF3C7",
                         },
                       ]}
                     >

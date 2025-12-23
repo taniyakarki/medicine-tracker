@@ -1,16 +1,17 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { useEffect, useState } from "react";
-import { Platform, StatusBar } from "react-native";
+import { StatusBar } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { AppProvider } from "../lib/context/AppContext";
+import { AppDataProvider } from "../lib/context/AppDataContext";
+import { useTheme } from "../lib/context/ThemeContext";
 import { removeDuplicateDoses } from "../lib/database/models/dose";
 import { initDatabase } from "../lib/database/operations";
+import { useThemeColors } from "../lib/hooks/useThemeColors";
 import { registerBackgroundFetchAsync } from "../lib/notifications/background-tasks";
 import { setupNotificationListeners } from "../lib/notifications/handlers";
 import { initializeNotifications } from "../lib/notifications/setup";
-import { AppProvider } from "../lib/context/AppContext";
-import { useThemeColors } from "../lib/hooks/useThemeColors";
-import { useTheme } from "../lib/context/ThemeContext";
 
 const ONBOARDING_KEY = "@medicine_tracker_onboarding_complete";
 
@@ -112,7 +113,9 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <AppProvider>
-        <RootLayoutContent />
+        <AppDataProvider>
+          <RootLayoutContent />
+        </AppDataProvider>
       </AppProvider>
     </SafeAreaProvider>
   );

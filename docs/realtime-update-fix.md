@@ -240,3 +240,8 @@ memo(Component); // Allows internal updates while memoizing props
 - Consistent with medicine details screen
 
 
+
+
+
+
+

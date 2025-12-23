@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Text,
   View,
+  ViewStyle,
 } from "react-native";
 import { DoseHistoryList } from "../../../components/medicine/DoseHistoryList";
 import { MedicineTypeIcon } from "../../../components/medicine/MedicineTypeIcon";
