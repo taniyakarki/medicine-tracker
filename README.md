@@ -176,6 +176,15 @@ Comprehensive documentation is available in the [`docs/`](docs/) folder:
 
 See the [Documentation Index](docs/README.md) for a complete list of all documentation.
 
+## Images
+<img height="400" src="./docs/images/home.jpeg">
+<img height="400" src="./docs/images/medicines.jpeg">
+<img height="400" src="./docs/images/history_list.jpeg">
+<img height="400" src="./docs/images/history_calendar.jpeg">
+<img height="400" src="./docs/images/profile.jpeg">
+<img height="400" src="./docs/images/edit_profile.jpeg">
+
+
 ## Support
 
 For issues or questions, please contact the development team.
