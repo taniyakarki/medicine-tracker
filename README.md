@@ -177,12 +177,13 @@ Comprehensive documentation is available in the [`docs/`](docs/) folder:
 See the [Documentation Index](docs/README.md) for a complete list of all documentation.
 
 ## Images
-<img height="400" src="./docs/images/home.jpeg">
-<img height="400" src="./docs/images/medicines.jpeg">
-<img height="400" src="./docs/images/history_list.jpeg">
-<img height="400" src="./docs/images/history_calendar.jpeg">
-<img height="400" src="./docs/images/profile.jpeg">
-<img height="400" src="./docs/images/edit_profile.jpeg">
+| Home | Medicines | History List |
+| :---: | :---: | :---: |
+| <img height="700" src="./docs/images/home.jpeg"> | <img height="700" src="./docs/images/medicines.jpeg"> | <img height="700" src="./docs/images/history_list.jpeg"> |
+
+| History Calendar | Profile | Edit Profile |
+| :---: | :---: | :---: |
+| <img height="700" src="./docs/images/history_calendar.jpeg"> | <img height="700" src="./docs/images/profile.jpeg"> | <img height="700" src="./docs/images/edit_profile.jpeg"> |
 
 
 ## Support
